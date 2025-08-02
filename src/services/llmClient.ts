@@ -1,4 +1,4 @@
-import {generateText} from 'ai';
+import {generateText, type LanguageModel} from 'ai';
 import {openai} from '@ai-sdk/openai';
 import {anthropic} from '@ai-sdk/anthropic';
 import type {AutopilotDecision, AutopilotConfig} from '../types/index.js';
@@ -8,7 +8,7 @@ type SupportedProvider = 'openai' | 'anthropic';
 interface ProviderInfo {
 	name: string;
 	models: string[];
-	createModel: (modelName: string) => any;
+	createModel: (modelName: string) => LanguageModel;
 	requiresKey: string;
 }
 
@@ -62,8 +62,12 @@ export class LLMClient {
 		return provider?.models ?? [];
 	}
 
-	getAvailableProviders(): Array<{name: string; models: string[]; available: boolean}> {
-		return Object.entries(PROVIDERS).map(([key, provider]) => ({
+	getAvailableProviders(): Array<{
+		name: string;
+		models: string[];
+		available: boolean;
+	}> {
+		return Object.entries(PROVIDERS).map(([_key, provider]) => ({
 			name: provider.name,
 			models: provider.models,
 			available: Boolean(process.env[provider.requiresKey]),
@@ -163,8 +167,12 @@ Guidelines:
 	}
 
 	// Static methods for provider discovery
-	static getAvailableProviders(): Array<{name: string; models: string[]; available: boolean}> {
-		return Object.entries(PROVIDERS).map(([key, provider]) => ({
+	static getAvailableProviders(): Array<{
+		name: string;
+		models: string[];
+		available: boolean;
+	}> {
+		return Object.entries(PROVIDERS).map(([_key, provider]) => ({
 			name: provider.name,
 			models: provider.models,
 			available: Boolean(process.env[provider.requiresKey]),
@@ -172,7 +180,7 @@ Guidelines:
 	}
 
 	static getAllSupportedModels(): Array<{provider: string; models: string[]}> {
-		return Object.entries(PROVIDERS).map(([key, provider]) => ({
+		return Object.entries(PROVIDERS).map(([_key, provider]) => ({
 			provider: provider.name,
 			models: provider.models,
 		}));

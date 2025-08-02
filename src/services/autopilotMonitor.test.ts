@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {describe, it, expect, beforeEach, vi, afterEach} from 'vitest';
 import {AutopilotMonitor} from './autopilotMonitor.js';
 import type {Session, AutopilotConfig} from '../types/index.js';

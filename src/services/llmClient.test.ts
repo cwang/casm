@@ -18,11 +18,11 @@ vi.mock('@ai-sdk/anthropic', () => ({
 describe('LLMClient', () => {
 	let llmClient: LLMClient;
 	let mockConfig: AutopilotConfig;
-	let mockGenerateText: any;
+	let mockGenerateText: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 	beforeEach(async () => {
 		vi.clearAllMocks();
-		
+
 		// Mock environment variables
 		process.env['OPENAI_API_KEY'] = 'test-openai-key';
 		process.env['ANTHROPIC_API_KEY'] = 'test-anthropic-key';
@@ -173,7 +173,8 @@ describe('LLMClient', () => {
 			const invalidConfig = {...mockConfig, model: 'invalid-model'};
 			const clientWithInvalidModel = new LLMClient(invalidConfig);
 
-			const result = await clientWithInvalidModel.analyzeClaudeOutput('Some output');
+			const result =
+				await clientWithInvalidModel.analyzeClaudeOutput('Some output');
 
 			expect(result.shouldIntervene).toBe(false);
 			expect(result.confidence).toBe(0);

@@ -19,8 +19,8 @@ const Session: React.FC<SessionProps> = ({
 }) => {
 	const {stdout} = useStdout();
 	const [isExiting, setIsExiting] = useState(false);
-	const [autopilotStatus, setAutopilotStatus] = useState<string>('STANDBY');
-	const [guidancesProvided, setGuidancesProvided] = useState(0);
+	const [, setAutopilotStatus] = useState<string>('STANDBY');
+	const [, setGuidancesProvided] = useState(0);
 	const autopilotMonitorRef = useRef<AutopilotMonitor | null>(null);
 
 	useEffect(() => {
