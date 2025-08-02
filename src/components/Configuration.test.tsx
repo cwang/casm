@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import {render} from 'ink-testing-library';
 import Configuration from './Configuration.js';
@@ -93,7 +92,7 @@ describe('Configuration component', () => {
 
 		// Test the configuration menu includes the autopilot option
 		const output = lastFrame();
-		
+
 		// The test verifies that the autopilot configuration option exists
 		// Testing the actual navigation would require complex state mocking
 		// which is better covered in integration tests
