@@ -43,46 +43,30 @@ This document outlines all the manual setup tasks that must be completed by huma
 - Test chat ID
 - Verified bot permissions in chat
 
-### 2. Text-to-Speech Service Setup
+### 2. OpenAI API Setup
 
-#### 2.1 Google Cloud Platform Account (Primary Option)
-**Timeline**: Day 1-2 (2 hours setup + verification time)
-**Responsible**: DevOps/Project Owner
-**Cost**: Pay-per-use (estimated $5-20/month for development)
+#### 2.1 OpenAI Account and API Key
+**Timeline**: Day 1 (30 minutes)
+**Responsible**: Developer/Project Owner
+**Cost**: Pay-per-use (estimated $5-15/month for development)
 
 **Steps**:
-1. Create Google Cloud Platform account
-2. Create new project or use existing
-3. Enable Text-to-Speech API
-4. Create service account
-5. Generate and download service account key (JSON)
-6. Set up billing account
-7. Configure API quotas and limits
-8. Test API access with sample request
+1. Create OpenAI account or use existing
+2. Navigate to API Keys section
+3. Generate new API key with appropriate permissions
+4. Set up billing account and usage limits
+5. Test API access with sample TTS request
+6. Test API access with sample STT request
 
 **Deliverables**:
-- Service account JSON key file
-- Project ID
-- API endpoint configuration
-- Quota limits documentation
+- OpenAI API key
+- Usage limits configuration
+- API endpoint confirmation (api.openai.com)
 
-#### 2.2 Alternative TTS Services (Backup Options)
-
-##### Azure Cognitive Services
-**Timeline**: Day 1 (1 hour)
-**Steps**:
-1. Create Azure account
-2. Create Cognitive Services resource
-3. Obtain subscription key and region
-4. Test API access
-
-##### AWS Polly
-**Timeline**: Day 1 (1 hour)
-**Steps**:
-1. Create AWS account
-2. Set up IAM user with Polly permissions
-3. Generate access keys
-4. Test API access
+**API Capabilities Needed**:
+- Text-to-Speech (TTS) for voice message generation
+- Speech-to-Text (STT) for voice message processing
+- Audio format support (MP3, OGG, WAV)
 
 ### 3. Development Environment Setup
 
@@ -237,16 +221,9 @@ TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 TELEGRAM_WEBHOOK_SECRET=your-webhook-secret-here
 TELEGRAM_WEBHOOK_URL=https://your-domain.com/telegram-webhook
 
-# Google Cloud TTS Configuration
-GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-GOOGLE_CLOUD_PROJECT_ID=your-project-id
-
-# Alternative TTS Services (if used)
-AZURE_TTS_SUBSCRIPTION_KEY=your-azure-key
-AZURE_TTS_REGION=eastus
-AWS_ACCESS_KEY_ID=your-aws-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret
-AWS_REGION=us-east-1
+# OpenAI Configuration
+OPENAI_API_KEY=sk-your-openai-api-key-here
+OPENAI_ORG_ID=org-your-organization-id  # Optional
 
 # Application Configuration
 NODE_ENV=production
@@ -257,31 +234,31 @@ WEBHOOK_PORT=3000
 ### Configuration Files Required
 ```
 ~/.config/ccmanager/
-├── credentials/
-│   ├── telegram-bot.json         # Telegram bot credentials
-│   ├── google-tts-service.json   # Google service account key
-│   ├── azure-tts.json           # Azure credentials (if used)
-│   └── aws-credentials.json      # AWS credentials (if used)
-├── certificates/
-│   ├── webhook-cert.pem         # SSL certificate
-│   └── webhook-key.pem          # SSL private key
-└── communication.json            # User communication preferences
+├── remote-control/
+│   ├── credentials/
+│   │   ├── telegram-bot.json         # Telegram bot credentials
+│   │   └── openai-api.json          # OpenAI API configuration
+│   ├── certificates/
+│   │   ├── webhook-cert.pem         # SSL certificate
+│   │   └── webhook-key.pem          # SSL private key
+│   └── communication.json           # User communication preferences
+└── config.json                     # Existing CCManager config
 ```
 
 ## Cost Estimation
 
 ### Development Phase (6 weeks)
-- Google Cloud TTS: $5-15 (low usage)
+- OpenAI API: $5-15 (low usage for TTS/STT)
 - Telegram Bot: Free
 - ngrok Pro (optional): $5/month
-- **Total**: $10-25
+- **Total**: $5-20
 
 ### Production Phase (per month)
-- Google Cloud TTS: $20-100 (depends on usage)
+- OpenAI API: $15-75 (depends on usage volume)
 - Cloud hosting: $10-50 (depends on scale)
 - Domain/SSL: $10-20/year
 - Monitoring tools: $0-30
-- **Total**: $30-180/month
+- **Total**: $25-155/month
 
 ## Risk Mitigation
 

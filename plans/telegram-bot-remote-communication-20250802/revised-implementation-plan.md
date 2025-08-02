@@ -17,20 +17,20 @@ This implementation plan creates a modular, plugin-based remote communication sy
    - Set up test chat
    - **Deliverable**: Bot token for Telegram adapter development
 
-2. **Text-to-Speech Service Setup** (2 hours)
-   - Create Google Cloud Platform account
-   - Enable Text-to-Speech API
-   - Create service account and download JSON key
-   - **Deliverable**: Service account key for voice features
+2. **OpenAI API Setup** (30 minutes)
+   - Create OpenAI account or use existing
+   - Generate API key with TTS and STT access
+   - Set up billing account and usage limits
+   - **Deliverable**: API key for voice features
 
 3. **Development Webhook Setup** (1 hour)
    - Install and configure ngrok
    - Obtain public tunnel URL
    - **Deliverable**: Webhook URL for adapter testing
 
-4. **Package Structure Setup** (1 hour)
-   - Set up monorepo structure for core + adapters
-   - Configure package dependencies and build system
+4. **Remote-Control Namespace Setup** (30 minutes)
+   - Create remote-control folder structure in CCManager project
+   - Configure TypeScript and build system
    - **Deliverable**: Development environment ready
 
 **✅ DEVELOPMENT CAN BEGIN**: Once items 1-4 are complete
@@ -46,7 +46,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 **Task 1.1: Core Interface Definitions** (8 hours)
 - **Assigned to**: Lead Architect
 - **Dependencies**: Pre-development setup completed
-- **Package**: `@remote-comm/core`
+- **Module**: `remote-control/core`
 - **Files to create:**
   ```
   src/interfaces/
@@ -69,7 +69,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 **Task 1.2: Configuration System** (8 hours)
 - **Assigned to**: Senior Developer
 - **Dependencies**: Task 1.1 completed
-- **Package**: `@remote-comm/core`
+- **Module**: `remote-control/core`
 - **Files to create:**
   ```
   src/core/
@@ -88,7 +88,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 **Task 1.3: Communication Orchestrator** (16 hours)
 - **Assigned to**: Lead Developer
 - **Dependencies**: Tasks 1.1, 1.2 completed
-- **Package**: `@remote-comm/core`
+- **Module**: `remote-control/core`
 - **Files to create:**
   ```
   src/core/
@@ -105,7 +105,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 **Task 1.4: Message Processing System** (12 hours)
 - **Assigned to**: Mid-level Developer
 - **Dependencies**: Task 1.1 completed
-- **Package**: `@remote-comm/core`
+- **Module**: `remote-control/core`
 - **Files to create:**
   ```
   src/core/
@@ -122,7 +122,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 **Task 1.5: Session Management** (8 hours)
 - **Assigned to**: Junior Developer
 - **Dependencies**: Task 1.1 completed
-- **Package**: `@remote-comm/core`
+- **Module**: `remote-control/core`
 - **Files to create:**
   ```
   src/core/
@@ -147,7 +147,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 **Task 2.1: Telegram Adapter Package Setup** (4 hours)
 - **Assigned to**: Any Developer
 - **Dependencies**: Phase 1 completed
-- **Package**: `@remote-comm/telegram-adapter`
+- **Module**: `remote-control/adapters/telegram`
 - **Actions:**
   - Create adapter package structure
   - Set up dependencies and build configuration
@@ -165,7 +165,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 **Task 2.2: Core Telegram Adapter** (16 hours)
 - **Assigned to**: Senior Developer
 - **Dependencies**: Task 2.1 completed + Bot token available
-- **Package**: `@remote-comm/telegram-adapter`
+- **Module**: `remote-control/adapters/telegram`
 - **Files to create:**
   ```
   src/
@@ -184,7 +184,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 **Task 2.3: Webhook and Message Handling** (12 hours)
 - **Assigned to**: Mid-level Developer
 - **Dependencies**: Task 2.1 completed + Webhook URL available
-- **Package**: `@remote-comm/telegram-adapter`
+- **Module**: `remote-control/adapters/telegram`
 - **Files to create:**
   ```
   src/
@@ -203,7 +203,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 **Task 2.4: Telegram Message Formatting** (8 hours)
 - **Assigned to**: Junior Developer
 - **Dependencies**: Tasks 2.2, 2.3 completed
-- **Package**: `@remote-comm/telegram-adapter`
+- **Module**: `remote-control/adapters/telegram`
 - **Files to create:**
   ```
   src/
@@ -245,7 +245,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 - **Dependencies to add:**
   ```json
   {
-    "@google-cloud/text-to-speech": "^5.0.0",
+    "openai": "^5.0.0",
     "node-ffmpeg": "^0.6.1",
     "@remote-comm/core": "workspace:*"
   }
@@ -300,7 +300,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 **Task 3.4: Telegram Voice Integration** (12 hours)
 - **Assigned to**: Senior Developer
 - **Dependencies**: Tasks 3.2, 3.3 completed + Telegram adapter completed
-- **Package**: `@remote-comm/telegram-adapter`
+- **Module**: `remote-control/adapters/telegram`
 - **Files to modify:**
   ```
   src/telegramAdapter.ts   # Add voice message support
@@ -440,7 +440,7 @@ This implementation plan creates a modular, plugin-based remote communication sy
 **Task 5.2: Plugin System Enhancement** (12 hours)
 - **Assigned to**: Architect
 - **Dependencies**: Core system completed
-- **Package**: `@remote-comm/core`
+- **Module**: `remote-control/core`
 - **Files to enhance:**
   ```
   src/core/

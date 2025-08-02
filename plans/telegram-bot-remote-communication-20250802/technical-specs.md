@@ -67,49 +67,44 @@ interface TelegramWebhookMessage {
 
 ### Voice Synthesis Integration
 
-#### Google Cloud Text-to-Speech
+#### OpenAI Text-to-Speech API
 ```typescript
-interface VoiceConfig {
-  languageCode: string;    // e.g., 'en-US'
-  name: string;           // e.g., 'en-US-Neural2-C'
-  ssmlGender: 'NEUTRAL' | 'FEMALE' | 'MALE';
-  speakingRate: number;   // 0.25 to 4.0
-  pitch: number;          // -20.0 to 20.0
-  volumeGainDb: number;   // -96.0 to 16.0
+interface OpenAITTSConfig {
+  apiKey: string;          // OpenAI API key
+  model: 'tts-1' | 'tts-1-hd';  // Model selection
+  voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+  speed: number;           // 0.25 to 4.0
+  response_format: 'mp3' | 'opus' | 'aac' | 'flac';
 }
 
-// API request
+// API request for TTS
+POST https://api.openai.com/v1/audio/speech
 {
-  input: { text: "Claude response text" },
-  voice: {
-    languageCode: 'en-US',
-    name: 'en-US-Neural2-C',
-    ssmlGender: 'FEMALE'
-  },
-  audioConfig: {
-    audioEncoding: 'OGG_OPUS',  // Compatible with Telegram
-    speakingRate: 1.0,
-    pitch: 0.0
-  }
+  "model": "tts-1",
+  "input": "[MyProject/main] Claude response text",
+  "voice": "alloy",
+  "response_format": "opus",  // Compatible with Telegram
+  "speed": 1.0
 }
 ```
 
-#### Alternative TTS Services
+#### OpenAI Speech-to-Text API
 ```typescript
-// Web Speech API (Browser-based)
-interface WebSpeechConfig {
-  voice: SpeechSynthesisVoice;
-  rate: number;
-  pitch: number;
-  volume: number;
+interface OpenAISTTConfig {
+  apiKey: string;          // OpenAI API key
+  model: 'whisper-1';      // Whisper model
+  language?: string;       // ISO-639-1 language code
+  response_format: 'json' | 'text' | 'srt' | 'verbose_json' | 'vtt';
 }
 
-// Azure Cognitive Services
-interface AzureTTSConfig {
-  subscriptionKey: string;
-  region: string;
-  voiceName: string;
-  outputFormat: 'audio-16khz-128kbitrate-mono-mp3';
+// API request for STT
+POST https://api.openai.com/v1/audio/transcriptions
+Content-Type: multipart/form-data
+{
+  "file": <audio_file>,
+  "model": "whisper-1",
+  "language": "en",
+  "response_format": "json"
 }
 ```
 

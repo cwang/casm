@@ -6,7 +6,7 @@ This document provides a precise, development-ready implementation plan with spe
 
 ## ⚠️ CRITICAL PRE-DEVELOPMENT SETUP (BLOCKING)
 
-### Must Complete Before Any PRs (Day 1 - 4 hours total)
+### Must Complete Before Any PRs (Day 1 - 2 hours total)
 
 **These are HUMAN-ONLY tasks that block ALL development:**
 
@@ -15,22 +15,24 @@ This document provides a precise, development-ready implementation plan with spe
    - Action: Create bot via @BotFather, obtain token
    - Output: `TELEGRAM_BOT_TOKEN` environment variable
 
-2. **Google Cloud TTS Setup** (2 hours)
-   - Person: DevOps Engineer
-   - Action: GCP account, enable API, service account key
-   - Output: Service account JSON file
+2. **OpenAI API Setup** (30 minutes)  
+   - Person: Project Owner
+   - Action: Create/access OpenAI account, generate API key
+   - Output: `OPENAI_API_KEY` environment variable
 
-3. **Development Webhook** (1 hour)
+3. **Development Webhook** (30 minutes)
    - Person: Developer
    - Action: Install ngrok, get public URL
    - Output: `WEBHOOK_URL` for testing
 
-4. **Monorepo Structure** (30 minutes)
+4. **Remote-Control Namespace Setup** (30 minutes)
    - Person: Lead Developer
-   - Action: Create package structure, configure build tools
+   - Action: Create remote-control folder structure in CCManager
    - Output: Ready development environment
 
 **🚨 NO DEVELOPMENT CAN START UNTIL ALL 4 ITEMS COMPLETE**
+
+**⚡ MAJOR IMPROVEMENT**: Reduced from 4 hours to 2 hours blocking time!
 
 ---
 
@@ -46,7 +48,7 @@ This document provides a precise, development-ready implementation plan with spe
 
 **Files to create in single PR:**
 ```
-packages/core/
+remote-control/core/
 ├── src/interfaces/
 │   ├── index.ts             # Re-export all interfaces  
 │   ├── channel.ts           # CommunicationChannel interface
@@ -54,10 +56,10 @@ packages/core/
 │   ├── plugin.ts            # Plugin system interfaces
 │   ├── integration.ts       # Host app integration interfaces
 │   └── config.ts            # Configuration interfaces
-├── package.json             # Core package configuration
+├── package.json             # Core module configuration
 ├── tsconfig.json            # TypeScript configuration
-├── README.md                # Package documentation
-└── .gitignore              # Package-specific ignores
+├── README.md                # Module documentation
+└── .gitignore              # Module-specific ignores
 ```
 
 **Key Deliverables:**
@@ -76,7 +78,7 @@ packages/core/
 
 **Files to create:**
 ```
-packages/core/src/
+remote-control/core/src/
 ├── core/
 │   ├── configManager.ts     # Hierarchical configuration management
 │   ├── validation.ts        # JSON Schema validation
@@ -105,7 +107,7 @@ packages/core/src/
 
 **Files to create:**
 ```
-packages/core/src/core/
+remote-control/core/src/core/
 ├── messageRouter.ts         # Channel-agnostic message routing
 ├── contextBuilder.ts        # Message context creation
 ├── messageQueue.ts          # Async message processing with retry
@@ -126,7 +128,7 @@ packages/core/src/core/
 
 **Files to create:**
 ```
-packages/core/src/core/
+remote-control/core/src/core/
 ├── orchestrator.ts          # Main communication coordinator
 ├── pluginManager.ts         # Plugin loading and management
 ├── channelFactory.ts        # Channel creation and lifecycle
@@ -147,7 +149,7 @@ packages/core/src/core/
 
 **Files to create:**
 ```
-packages/core/src/
+remote-control/core/src/
 ├── utils/
 │   ├── baseAdapter.ts       # Base class for adapter development
 │   ├── messageFormatter.ts  # Generic message formatting utilities
@@ -179,7 +181,7 @@ packages/core/src/
 
 **Files to create:**
 ```
-packages/telegram-adapter/
+remote-control/adapters/telegram/
 ├── src/
 │   ├── index.ts             # Plugin registration and exports
 │   ├── telegramAdapter.ts   # Main adapter implementation
@@ -205,7 +207,7 @@ packages/telegram-adapter/
 
 **Files to create:**
 ```
-packages/telegram-adapter/src/
+remote-control/adapters/telegram/src/
 ├── telegramBot.ts           # Telegraf bot wrapper
 ├── messageFormatter.ts      # Telegram-specific formatting
 ├── rateLimiter.ts          # API rate limiting
@@ -228,7 +230,7 @@ packages/telegram-adapter/src/
 
 **Files to create:**
 ```
-packages/telegram-adapter/src/
+remote-control/adapters/telegram/src/
 ├── webhookHandler.ts        # Webhook setup and message receiving
 ├── messageParser.ts         # Parse incoming Telegram messages
 ├── eventHandler.ts          # Handle different Telegram events
@@ -250,7 +252,7 @@ packages/telegram-adapter/src/
 
 **Files to create:**
 ```
-packages/telegram-adapter/
+remote-control/adapters/telegram/
 ├── src/integration.ts       # Integration helper utilities
 └── __tests__/
     ├── integration/
@@ -282,7 +284,7 @@ packages/telegram-adapter/
 
 **Files to create:**
 ```
-packages/voice-synthesis/
+remote-control/adapters/voice-synthesis/
 ├── src/
 │   ├── index.ts             # Main exports
 │   ├── voiceSynthesizer.ts  # Main TTS interface
@@ -302,12 +304,12 @@ packages/voice-synthesis/
 
 **Files to create:**
 ```
-packages/voice-synthesis/src/providers/
-├── googleTTS.ts             # Google Cloud TTS implementation
+remote-control/adapters/voice-synthesis/src/providers/
+├── openaiTTS.ts             # OpenAI TTS implementation
 ├── azureTTS.ts              # Azure TTS implementation (basic)
 ├── awsPolly.ts              # AWS Polly implementation (basic)
 └── __tests__/
-    ├── googleTTS.test.ts
+    ├── openaiTTS.test.ts
     └── providerBase.test.ts
 ```
 
@@ -318,7 +320,7 @@ packages/voice-synthesis/src/providers/
 
 **Files to create:**
 ```
-packages/voice-synthesis/src/
+remote-control/adapters/voice-synthesis/src/
 ├── audioProcessor.ts        # Audio format conversion
 ├── encoders/
 │   ├── oggEncoder.ts        # OGG/Opus for Telegram
@@ -336,7 +338,7 @@ packages/voice-synthesis/src/
 
 **Files to modify and create:**
 ```
-packages/telegram-adapter/src/
+remote-control/adapters/telegram/src/
 ├── telegramAdapter.ts       # Add voice message support
 ├── voiceMessageHandler.ts   # Voice-specific message handling
 └── __tests__/
@@ -358,7 +360,7 @@ packages/telegram-adapter/src/
 
 **Files to create:**
 ```
-packages/ccmanager-integration/
+remote-control/integration/ccmanager/
 ├── src/
 │   ├── index.ts                 # Main exports and setup function
 │   ├── ccmanagerIntegration.ts  # HostApplicationIntegration impl
@@ -376,7 +378,7 @@ packages/ccmanager-integration/
 
 **Files to create:**
 ```
-packages/ccmanager-ui/
+remote-control/integration/ui/
 ├── src/components/
 │   ├── CommunicationConfig.tsx     # Main configuration UI
 │   ├── ChannelSetup.tsx           # Channel setup forms
@@ -558,10 +560,12 @@ Each PR must include:
 ✅ **This plan is ready for actual development with the following confirmations:**
 
 ### Human Setup Prerequisites:
-- [ ] Telegram bot token obtained
-- [ ] Google Cloud TTS service account created
-- [ ] Development webhook URL configured
-- [ ] Monorepo structure initialized
+- [ ] Telegram bot token obtained (30 min)
+- [ ] OpenAI API key configured (30 min) 
+- [ ] Development webhook URL configured (30 min)
+- [ ] Remote-control namespace initialized (30 min)
+
+**⚡ TOTAL BLOCKING TIME: 2 hours (reduced from 4 hours!)**
 
 ### Development Prerequisites:
 - [ ] Team assignments confirmed

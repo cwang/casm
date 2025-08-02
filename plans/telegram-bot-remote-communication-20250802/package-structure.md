@@ -4,35 +4,30 @@
 
 This document defines the modular package structure for the remote communication system, showing how packages interact and how external projects can integrate with the system.
 
-## Monorepo Structure
+## CCManager Project Structure
 
 ```
-remote-communication/
-├── packages/
-│   ├── core/                           # @remote-comm/core
+ccmanager/
+├── src/                                # Existing CCManager source
+├── remote-control/                     # New dedicated namespace
+│   ├── core/                          # Core communication system
 │   ├── adapters/
-│   │   ├── telegram/                   # @remote-comm/telegram-adapter
-│   │   ├── slack/                      # @remote-comm/slack-adapter
-│   │   └── voice-synthesis/            # @remote-comm/voice-synthesis
-│   ├── integrations/
-│   │   ├── ccmanager/                  # @remote-comm/ccmanager-integration
-│   │   └── ccmanager-ui/               # @remote-comm/ccmanager-ui
-│   └── tools/
-│       └── dev-utils/                  # @remote-comm/dev-utils
-├── examples/
-│   ├── vim-plugin/                     # Vim integration example
-│   ├── vscode-extension/               # VS Code extension example
-│   ├── generic-cli-tool/               # Minimal CLI tool example
-│   └── custom-adapter/                 # Custom adapter example
-├── docs/
-│   ├── integration-guide.md
-│   ├── plugin-development.md
-│   ├── api-reference.md
-│   └── examples/
-├── tools/
-│   ├── build-scripts/
-│   └── testing-utils/
-└── package.json                        # Root package.json for monorepo
+│   │   ├── telegram/                  # Telegram adapter
+│   │   ├── slack/                     # Slack adapter
+│   │   └── voice-synthesis/           # OpenAI TTS/STT integration
+│   ├── integration/
+│   │   ├── ccmanager/                 # CCManager-specific integration
+│   │   └── ui/                        # CCManager UI components
+│   ├── examples/
+│   │   ├── vim-plugin/                # Vim integration example
+│   │   ├── vscode-extension/          # VS Code extension example
+│   │   └── generic-cli-tool/          # Minimal CLI tool example
+│   └── docs/
+│       ├── integration-guide.md
+│       ├── adapter-development.md
+│       └── api-reference.md
+├── package.json                       # Updated with remote-control dependencies
+└── README.md                         # Updated documentation
 ```
 
 ## Package Dependencies
@@ -48,25 +43,26 @@ remote-communication/
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                Integration Packages                             │
+│                Integration Layer                                │
 │  ┌─────────────────────────────┐  ┌───────────────────────────┐ │
-│  │ @remote-comm/              │  │ @remote-comm/             │ │
-│  │ ccmanager-integration      │  │ ccmanager-ui              │ │
+│  │ remote-control/            │  │ remote-control/           │ │
+│  │ integration/ccmanager      │  │ integration/ui            │ │
 │  └─────────────────────────────┘  └───────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      Core Package                               │
-│                 @remote-comm/core                               │
+│                      Core System                                │
+│                 remote-control/core                             │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                   Adapter Packages                             │
+│                   Adapter Modules                              │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │ @remote-comm/   │  │ @remote-comm/   │  │ @remote-comm/   │ │
-│  │ telegram-adapter│  │ slack-adapter   │  │ voice-synthesis │ │
+│  │ remote-control/ │  │ remote-control/ │  │ remote-control/ │ │
+│  │ adapters/       │  │ adapters/       │  │ adapters/       │ │
+│  │ telegram        │  │ slack           │  │ voice-synthesis │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
 ```
