@@ -76,7 +76,11 @@ const Session: React.FC<SessionProps> = ({
 		}
 
 		// Auto-enable autopilot if enabled globally and LLM is available
-		if (autopilotConfig.enabled && autopilotMonitor.isLLMAvailable() && !session.autopilotState.isActive) {
+		if (
+			autopilotConfig.enabled &&
+			autopilotMonitor.isLLMAvailable() &&
+			!session.autopilotState.isActive
+		) {
 			autopilotMonitor.enable(session);
 			if (stdout) {
 				stdout.write('\n✈️ Auto-pilot: ACTIVE (globally enabled)\n');
@@ -105,6 +109,26 @@ const Session: React.FC<SessionProps> = ({
 
 		autopilotMonitor.on('statusChanged', handleAutopilotStatusChange);
 		autopilotMonitor.on('guidanceProvided', handleGuidanceProvided);
+
+		// Connect autopilot to session state changes for intelligent triggering
+		const handleSessionStateChange = (
+			changedSession: SessionType,
+			oldState: string,
+			newState: string,
+		) => {
+			if (changedSession.id === session.id && autopilotMonitorRef.current) {
+				console.log(
+					`🔄 Session state change detected: ${oldState} → ${newState}`,
+				);
+				autopilotMonitorRef.current.onSessionStateChanged(
+					changedSession,
+					oldState,
+					newState,
+				);
+			}
+		};
+
+		sessionManager.on('sessionStateChanged', handleSessionStateChange);
 
 		// Immediately resize the PTY and terminal to current dimensions
 		// This fixes rendering issues when terminal width changed while in menu
@@ -183,7 +207,9 @@ const Session: React.FC<SessionProps> = ({
 				} else {
 					// Show message that API key is needed
 					if (stdout) {
-						stdout.write('\n✈️ Auto-pilot: API key required (configure in settings)\n');
+						stdout.write(
+							'\n✈️ Auto-pilot: API key required (configure in settings)\n',
+						);
 					}
 				}
 				return;
@@ -238,6 +264,12 @@ const Session: React.FC<SessionProps> = ({
 				autopilotMonitorRef.current.destroy();
 				autopilotMonitorRef.current = null;
 			}
+
+			// Remove session state change listener
+			sessionManager.removeListener(
+				'sessionStateChanged',
+				handleSessionStateChange,
+			);
 
 			// Mark session as inactive
 			sessionManager.setSessionActive(session.worktreePath, false);

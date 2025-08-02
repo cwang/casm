@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {spawn, IPty} from 'node-pty';
 import {EventEmitter} from 'events';
@@ -19,6 +20,7 @@ vi.mock('./configurationManager.js', () => ({
 		getStatusHooks: vi.fn(() => ({})),
 		getDefaultPreset: vi.fn(),
 		getPresetById: vi.fn(),
+		getAutopilotConfig: vi.fn(),
 	},
 }));
 
@@ -40,6 +42,11 @@ vi.mock('@xterm/headless', () => ({
 // Mock worktreeService
 vi.mock('./worktreeService.js', () => ({
 	WorktreeService: vi.fn(),
+}));
+
+// Mock autopilotMonitor
+vi.mock('./autopilotMonitor.js', () => ({
+	AutopilotMonitor: vi.fn(),
 }));
 
 // Create a mock IPty class
@@ -1145,6 +1152,281 @@ describe('SessionManager', () => {
 			// Should only keep the last 200 lines
 			expect(session.output.length).toBeLessThanOrEqual(201); // 200 + possible empty line
 			expect(session.output[session.output.length - 2]).toBe('Line 249'); // Last complete line
+		});
+	});
+
+	describe('setAutopilotForAllSessions', () => {
+		beforeEach(() => {
+			// Mock configurationManager.getAutopilotConfig for these tests
+			vi.mocked(configurationManager.getAutopilotConfig).mockReturnValue({
+				enabled: true,
+				provider: 'openai',
+				model: 'gpt-4',
+				maxGuidancesPerHour: 5,
+				analysisDelayMs: 2000,
+				apiKeys: {
+					openai: 'test-key',
+				},
+			});
+		});
+
+		it('should enable autopilot for all sessions when enabled=true', async () => {
+			// Create multiple test sessions
+			vi.mocked(configurationManager.getDefaultPreset).mockReturnValue({
+				id: '1',
+				name: 'Claude',
+				command: 'claude',
+				args: [],
+			});
+			vi.mocked(spawn).mockReturnValue(mockPty as unknown as IPty);
+
+			const session1 =
+				await sessionManager.createSessionWithPreset('/test/path1');
+			const session2 =
+				await sessionManager.createSessionWithPreset('/test/path2');
+			const session3 =
+				await sessionManager.createSessionWithPreset('/test/path3');
+
+			// Initialize autopilot states (normally done by Session component)
+			session1.autopilotState = {
+				isActive: false,
+				guidancesProvided: 0,
+				analysisInProgress: false,
+			};
+			session2.autopilotState = {
+				isActive: false,
+				guidancesProvided: 0,
+				analysisInProgress: false,
+			};
+			session3.autopilotState = {
+				isActive: true,
+				guidancesProvided: 1,
+				analysisInProgress: false,
+			}; // Already active
+
+			// Mock AutopilotMonitor methods
+			const mockEnable = vi.fn();
+			const mockDisable = vi.fn();
+			const mockIsLLMAvailable = vi.fn().mockReturnValue(true);
+
+			const AutopilotMonitor = (await import('./autopilotMonitor.js'))
+				.AutopilotMonitor;
+			vi.mocked(AutopilotMonitor).mockImplementation(
+				() =>
+					({
+						enable: mockEnable,
+						disable: mockDisable,
+						isLLMAvailable: mockIsLLMAvailable,
+					}) as any,
+			);
+
+			// Call setAutopilotForAllSessions
+			sessionManager.setAutopilotForAllSessions(true);
+
+			// Verify that enable was called for sessions that weren't active
+			expect(mockEnable).toHaveBeenCalledTimes(2); // session1 and session2
+			expect(mockEnable).toHaveBeenCalledWith(session1);
+			expect(mockEnable).toHaveBeenCalledWith(session2);
+
+			// session3 was already active, so enable should not be called for it
+			expect(mockEnable).not.toHaveBeenCalledWith(session3);
+		});
+
+		it('should disable autopilot for all sessions when enabled=false', async () => {
+			// Create multiple test sessions
+			vi.mocked(configurationManager.getDefaultPreset).mockReturnValue({
+				id: '1',
+				name: 'Claude',
+				command: 'claude',
+				args: [],
+			});
+			vi.mocked(spawn).mockReturnValue(mockPty as unknown as IPty);
+
+			const session1 =
+				await sessionManager.createSessionWithPreset('/test/path1');
+			const session2 =
+				await sessionManager.createSessionWithPreset('/test/path2');
+			const session3 =
+				await sessionManager.createSessionWithPreset('/test/path3');
+
+			// Initialize autopilot states (some active, some not)
+			session1.autopilotState = {
+				isActive: true,
+				guidancesProvided: 2,
+				analysisInProgress: false,
+			};
+			session2.autopilotState = {
+				isActive: false,
+				guidancesProvided: 0,
+				analysisInProgress: false,
+			};
+			session3.autopilotState = {
+				isActive: true,
+				guidancesProvided: 1,
+				analysisInProgress: false,
+			};
+
+			// Mock AutopilotMonitor methods
+			const mockEnable = vi.fn();
+			const mockDisable = vi.fn();
+			const mockIsLLMAvailable = vi.fn().mockReturnValue(true);
+
+			const AutopilotMonitor = (await import('./autopilotMonitor.js'))
+				.AutopilotMonitor;
+			vi.mocked(AutopilotMonitor).mockImplementation(
+				() =>
+					({
+						enable: mockEnable,
+						disable: mockDisable,
+						isLLMAvailable: mockIsLLMAvailable,
+					}) as any,
+			);
+
+			// Call setAutopilotForAllSessions
+			sessionManager.setAutopilotForAllSessions(false);
+
+			// Verify that disable was called for sessions that were active
+			expect(mockDisable).toHaveBeenCalledTimes(2); // session1 and session3
+			expect(mockDisable).toHaveBeenCalledWith(session1);
+			expect(mockDisable).toHaveBeenCalledWith(session3);
+
+			// session2 was already inactive, so disable should not be called for it
+			expect(mockDisable).not.toHaveBeenCalledWith(session2);
+		});
+
+		it('should handle sessions without autopilotState by initializing them', async () => {
+			// Create test sessions
+			vi.mocked(configurationManager.getDefaultPreset).mockReturnValue({
+				id: '1',
+				name: 'Claude',
+				command: 'claude',
+				args: [],
+			});
+			vi.mocked(spawn).mockReturnValue(mockPty as unknown as IPty);
+
+			const session1 =
+				await sessionManager.createSessionWithPreset('/test/path1');
+			const session2 =
+				await sessionManager.createSessionWithPreset('/test/path2');
+
+			// Simulate sessions without autopilotState (old sessions)
+			delete session1.autopilotState;
+			delete session2.autopilotState;
+
+			// Mock AutopilotMonitor
+			const mockEnable = vi.fn();
+			const mockIsLLMAvailable = vi.fn().mockReturnValue(true);
+
+			const AutopilotMonitor = (await import('./autopilotMonitor.js'))
+				.AutopilotMonitor;
+			vi.mocked(AutopilotMonitor).mockImplementation(
+				() =>
+					({
+						enable: mockEnable,
+						isLLMAvailable: mockIsLLMAvailable,
+					}) as any,
+			);
+
+			// Call setAutopilotForAllSessions
+			sessionManager.setAutopilotForAllSessions(true);
+
+			// Verify autopilotState was initialized
+			expect(session1.autopilotState).toEqual({
+				isActive: false,
+				guidancesProvided: 0,
+				analysisInProgress: false,
+			});
+			expect(session2.autopilotState).toEqual({
+				isActive: false,
+				guidancesProvided: 0,
+				analysisInProgress: false,
+			});
+
+			// Verify enable was called for both sessions
+			expect(mockEnable).toHaveBeenCalledTimes(2);
+		});
+
+		it('should handle case when LLM is not available', async () => {
+			// Create test session
+			vi.mocked(configurationManager.getDefaultPreset).mockReturnValue({
+				id: '1',
+				name: 'Claude',
+				command: 'claude',
+				args: [],
+			});
+			vi.mocked(spawn).mockReturnValue(mockPty as unknown as IPty);
+
+			const session1 =
+				await sessionManager.createSessionWithPreset('/test/path1');
+			session1.autopilotState = {
+				isActive: false,
+				guidancesProvided: 0,
+				analysisInProgress: false,
+			};
+
+			// Mock AutopilotMonitor with LLM unavailable
+			const mockEnable = vi.fn();
+			const mockIsLLMAvailable = vi.fn().mockReturnValue(false);
+
+			const AutopilotMonitor = (await import('./autopilotMonitor.js'))
+				.AutopilotMonitor;
+			vi.mocked(AutopilotMonitor).mockImplementation(
+				() =>
+					({
+						enable: mockEnable,
+						isLLMAvailable: mockIsLLMAvailable,
+					}) as any,
+			);
+
+			// Call setAutopilotForAllSessions
+			sessionManager.setAutopilotForAllSessions(true);
+
+			// Verify enable was not called since LLM is unavailable
+			expect(mockEnable).not.toHaveBeenCalled();
+		});
+
+		it('should handle case when autopilot config is missing', async () => {
+			// Mock missing autopilot config
+			vi.mocked(configurationManager.getAutopilotConfig).mockReturnValue(
+				undefined as any,
+			);
+
+			// Create test session
+			vi.mocked(configurationManager.getDefaultPreset).mockReturnValue({
+				id: '1',
+				name: 'Claude',
+				command: 'claude',
+				args: [],
+			});
+			vi.mocked(spawn).mockReturnValue(mockPty as unknown as IPty);
+
+			await sessionManager.createSessionWithPreset('/test/path1');
+
+			// Mock console.warn to track warning
+			const mockWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+			// Call setAutopilotForAllSessions - should handle gracefully
+			expect(() => {
+				sessionManager.setAutopilotForAllSessions(true);
+			}).not.toThrow();
+
+			// Verify warning was logged
+			expect(mockWarn).toHaveBeenCalledWith(
+				'No autopilot config found, cannot enable autopilot for sessions',
+			);
+
+			mockWarn.mockRestore();
+		});
+
+		it('should work with empty session list', () => {
+			// Call setAutopilotForAllSessions with no sessions
+			expect(() => {
+				sessionManager.setAutopilotForAllSessions(true);
+			}).not.toThrow();
+
+			expect(() => {
+				sessionManager.setAutopilotForAllSessions(false);
+			}).not.toThrow();
 		});
 	});
 });

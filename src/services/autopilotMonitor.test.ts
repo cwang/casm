@@ -183,6 +183,76 @@ describe('AutopilotMonitor', () => {
 		});
 	});
 
+	describe('state change triggering', () => {
+		it('should trigger analysis when state changes from busy to waiting_input', async () => {
+			autopilotMonitor.enable(mockSession);
+
+			// Spy on analyzeSession method
+			const analyzeSessionSpy = vi.spyOn(
+				autopilotMonitor as any,
+				'analyzeSession',
+			);
+
+			// Simulate state change from busy to waiting_input (should trigger)
+			autopilotMonitor.onSessionStateChanged(
+				mockSession,
+				'busy',
+				'waiting_input',
+			);
+
+			// Wait for the delayed analysis
+			await new Promise(resolve => setTimeout(resolve, 1100));
+
+			expect(analyzeSessionSpy).toHaveBeenCalledWith(mockSession);
+		});
+
+		it('should trigger analysis when state changes from busy to idle', async () => {
+			autopilotMonitor.enable(mockSession);
+
+			// Spy on analyzeSession method
+			const analyzeSessionSpy = vi.spyOn(
+				autopilotMonitor as any,
+				'analyzeSession',
+			);
+
+			// Simulate state change from busy to idle (should trigger)
+			autopilotMonitor.onSessionStateChanged(mockSession, 'busy', 'idle');
+
+			// Wait for the delayed analysis
+			await new Promise(resolve => setTimeout(resolve, 1100));
+
+			expect(analyzeSessionSpy).toHaveBeenCalledWith(mockSession);
+		});
+
+		it('should NOT trigger analysis for other state changes', async () => {
+			autopilotMonitor.enable(mockSession);
+
+			// Spy on analyzeSession method
+			const analyzeSessionSpy = vi.spyOn(
+				autopilotMonitor as any,
+				'analyzeSession',
+			);
+
+			// Simulate state changes that should NOT trigger analysis
+			autopilotMonitor.onSessionStateChanged(mockSession, 'idle', 'busy');
+			autopilotMonitor.onSessionStateChanged(
+				mockSession,
+				'waiting_input',
+				'busy',
+			);
+			autopilotMonitor.onSessionStateChanged(
+				mockSession,
+				'idle',
+				'waiting_input',
+			);
+
+			// Wait to ensure no delayed analysis
+			await new Promise(resolve => setTimeout(resolve, 1100));
+
+			expect(analyzeSessionSpy).not.toHaveBeenCalled();
+		});
+	});
+
 	describe('configuration updates', () => {
 		it('should update configuration', () => {
 			const newConfig: AutopilotConfig = {

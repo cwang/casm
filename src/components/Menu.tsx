@@ -377,6 +377,9 @@ const Menu: React.FC<MenuProps> = ({
 				const newConfig = {...currentConfig, enabled: !currentConfig.enabled};
 				configurationManager.setAutopilotConfig(newConfig);
 				setAutopilotEnabled(newConfig.enabled);
+
+				// Apply to all existing sessions
+				sessionManager.setAutopilotForAllSessions(newConfig.enabled);
 				break;
 			}
 			case 'c':
@@ -460,6 +463,9 @@ const Menu: React.FC<MenuProps> = ({
 			const newConfig = {...currentConfig, enabled: !currentConfig.enabled};
 			configurationManager.setAutopilotConfig(newConfig);
 			setAutopilotEnabled(newConfig.enabled);
+
+			// Apply to all existing sessions
+			sessionManager.setAutopilotForAllSessions(newConfig.enabled);
 		} else if (item.value === 'configuration') {
 			// Handle in parent component - use special marker
 			onSelectWorktree({

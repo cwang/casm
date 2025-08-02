@@ -13,6 +13,7 @@ import {promisify} from 'util';
 import {configurationManager} from './configurationManager.js';
 import {WorktreeService} from './worktreeService.js';
 import {createStateDetector} from './stateDetector.js';
+import {AutopilotMonitor} from './autopilotMonitor.js';
 const {Terminal} = pkg;
 const execAsync = promisify(exec);
 
@@ -266,7 +267,7 @@ export class SessionManager extends EventEmitter implements ISessionManager {
 			if (newState !== oldState) {
 				session.state = newState;
 				this.executeStatusHook(oldState, newState, session);
-				this.emit('sessionStateChanged', session);
+				this.emit('sessionStateChanged', session, oldState, newState);
 			}
 		}, 100); // Check every 100ms
 
@@ -280,8 +281,9 @@ export class SessionManager extends EventEmitter implements ISessionManager {
 			clearInterval(session.stateCheckInterval);
 		}
 		// Update state to idle before destroying
+		const oldState = session.state;
 		session.state = 'idle';
-		this.emit('sessionStateChanged', session);
+		this.emit('sessionStateChanged', session, oldState, 'idle');
 		this.destroySession(session.worktreePath);
 		this.emit('sessionExit', session);
 	}
@@ -462,6 +464,63 @@ export class SessionManager extends EventEmitter implements ISessionManager {
 		});
 
 		return counts;
+	}
+
+	/**
+	 * Enable or disable autopilot for all existing sessions
+	 * This is used when the global autopilot switch is toggled
+	 */
+	setAutopilotForAllSessions(enabled: boolean): void {
+		const autopilotConfig = configurationManager.getAutopilotConfig();
+		if (!autopilotConfig) {
+			console.warn(
+				'No autopilot config found, cannot enable autopilot for sessions',
+			);
+			return;
+		}
+
+		const sessions = this.getAllSessions();
+		console.log(
+			`🔄 Setting autopilot ${enabled ? 'enabled' : 'disabled'} for ${sessions.length} sessions`,
+		);
+
+		sessions.forEach(session => {
+			// Initialize autopilot state if needed
+			if (!session.autopilotState) {
+				session.autopilotState = {
+					isActive: false,
+					guidancesProvided: 0,
+					analysisInProgress: false,
+				};
+			}
+
+			if (enabled) {
+				// Enable autopilot for this session if not already active
+				if (!session.autopilotState.isActive) {
+					const autopilotMonitor = new AutopilotMonitor(autopilotConfig);
+
+					if (autopilotMonitor.isLLMAvailable()) {
+						autopilotMonitor.enable(session);
+						console.log(
+							`✅ Enabled autopilot for session ${session.id} (${session.worktreePath})`,
+						);
+					} else {
+						console.log(
+							`❌ Cannot enable autopilot for session ${session.id} - LLM not available`,
+						);
+					}
+				}
+			} else {
+				// Disable autopilot for this session if currently active
+				if (session.autopilotState.isActive) {
+					const autopilotMonitor = new AutopilotMonitor(autopilotConfig);
+					autopilotMonitor.disable(session);
+					console.log(
+						`❌ Disabled autopilot for session ${session.id} (${session.worktreePath})`,
+					);
+				}
+			}
+		});
 	}
 
 	static formatSessionCounts(counts: SessionCounts): string {

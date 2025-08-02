@@ -11,7 +11,6 @@ import stripAnsi from 'strip-ansi';
 export class AutopilotMonitor extends EventEmitter {
 	private llmClient: LLMClient;
 	private config: AutopilotConfig;
-	private analysisTimer?: NodeJS.Timeout;
 
 	constructor(config: AutopilotConfig) {
 		super();
@@ -76,26 +75,52 @@ export class AutopilotMonitor extends EventEmitter {
 		return session.autopilotState;
 	}
 
-	private startMonitoring(session: Session): void {
-		this.stopMonitoring(); // Clear any existing timer
+	private startMonitoring(_session: Session): void {
+		this.stopMonitoring(); // Clear any existing listeners
 
-		console.log(`✈️ Starting autopilot monitoring with ${this.config.analysisDelayMs}ms interval`);
-		this.analysisTimer = setInterval(() => {
-			if (
-				!session.autopilotState?.isActive ||
-				session.autopilotState.analysisInProgress
-			) {
-				return;
-			}
-
-			this.analyzeSession(session);
-		}, this.config.analysisDelayMs);
+		console.log(`✈️ Starting autopilot monitoring (state-change triggered)`);
+		// We'll listen for state changes via sessionManager events instead of using a timer
 	}
 
 	private stopMonitoring(): void {
-		if (this.analysisTimer) {
-			clearInterval(this.analysisTimer);
-			this.analysisTimer = undefined;
+		console.log('🛑 Stopping autopilot monitoring');
+		// Remove any event listeners if needed
+	}
+
+	// New method to handle state changes from sessionManager
+	onSessionStateChanged(
+		session: Session,
+		oldState: string,
+		newState: string,
+	): void {
+		console.log(
+			`📡 Autopilot received state change: ${oldState} → ${newState}, active: ${session.autopilotState?.isActive}, analysisInProgress: ${session.autopilotState?.analysisInProgress}`,
+		);
+
+		if (
+			!session.autopilotState?.isActive ||
+			session.autopilotState.analysisInProgress
+		) {
+			console.log(`⏸️ Autopilot skipping: not active or analysis in progress`);
+			return;
+		}
+
+		// Only analyze when Claude Code has finished responding
+		// Trigger analysis when transitioning from 'busy' to 'waiting_input' or 'idle'
+		const shouldAnalyze =
+			oldState === 'busy' &&
+			(newState === 'waiting_input' || newState === 'idle');
+
+		if (shouldAnalyze) {
+			console.log(`🎯 Autopilot triggered: ${oldState} → ${newState}`);
+			// Add a small delay to ensure output is fully captured
+			setTimeout(() => {
+				this.analyzeSession(session);
+			}, this.config.analysisDelayMs);
+		} else {
+			console.log(
+				`⚠️ Autopilot not triggered: ${oldState} → ${newState} (need busy → waiting_input/idle)`,
+			);
 		}
 	}
 
@@ -122,10 +147,14 @@ export class AutopilotMonitor extends EventEmitter {
 				return; // No output to analyze
 			}
 
-			console.log(`📝 Analyzing ${recentOutput.length} characters of output...`);
+			console.log(
+				`📝 Analyzing ${recentOutput.length} characters of output...`,
+			);
 			const decision = await this.llmClient.analyzeClaudeOutput(recentOutput);
 
-			console.log(`🤖 LLM decision: shouldIntervene=${decision.shouldIntervene}, confidence=${decision.confidence}`);
+			console.log(
+				`🤖 LLM decision: shouldIntervene=${decision.shouldIntervene}, confidence=${decision.confidence}`,
+			);
 
 			if (decision.shouldIntervene && decision.guidance) {
 				this.provideGuidance(session, decision);
@@ -164,7 +193,9 @@ export class AutopilotMonitor extends EventEmitter {
 		const recentLines = session.output.slice(-10);
 		const output = recentLines.join('\n');
 		const stripped = stripAnsi(output);
-		console.log(`📖 Session output: ${session.output.length} lines, recent: ${recentLines.length} lines, stripped: ${stripped.length} chars`);
+		console.log(
+			`📖 Session output: ${session.output.length} lines, recent: ${recentLines.length} lines, stripped: ${stripped.length} chars`,
+		);
 		return stripped;
 	}
 
