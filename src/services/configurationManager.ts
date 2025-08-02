@@ -95,6 +95,7 @@ export class ConfigurationManager {
 		if (!this.config.autopilot) {
 			this.config.autopilot = {
 				enabled: false,
+				provider: 'openai',
 				model: 'gpt-4',
 				maxGuidancesPerHour: 3,
 				analysisDelayMs: 3000,
@@ -318,6 +319,7 @@ export class ConfigurationManager {
 		return (
 			this.config.autopilot || {
 				enabled: false,
+				provider: 'openai',
 				model: 'gpt-4',
 				maxGuidancesPerHour: 3,
 				analysisDelayMs: 3000,

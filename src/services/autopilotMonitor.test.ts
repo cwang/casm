@@ -6,6 +6,9 @@ import type {Session, AutopilotConfig} from '../types/index.js';
 vi.mock('./llmClient.js', () => ({
 	LLMClient: vi.fn().mockImplementation(() => ({
 		isAvailable: vi.fn().mockReturnValue(true),
+		updateConfig: vi.fn(),
+		getCurrentProviderName: vi.fn().mockReturnValue('OpenAI'),
+		getSupportedModels: vi.fn().mockReturnValue(['gpt-4', 'gpt-3.5-turbo']),
 		analyzeClaudeOutput: vi.fn().mockResolvedValue({
 			shouldIntervene: false,
 			confidence: 0.3,
@@ -27,6 +30,7 @@ describe('AutopilotMonitor', () => {
 	beforeEach(() => {
 		config = {
 			enabled: true,
+			provider: 'openai',
 			model: 'gpt-4',
 			maxGuidancesPerHour: 3,
 			analysisDelayMs: 1000,
@@ -178,7 +182,8 @@ describe('AutopilotMonitor', () => {
 		it('should update configuration', () => {
 			const newConfig: AutopilotConfig = {
 				enabled: false,
-				model: 'gpt-3.5-turbo',
+				provider: 'anthropic',
+				model: 'claude-3-5-sonnet-20241022',
 				maxGuidancesPerHour: 5,
 				analysisDelayMs: 2000,
 			};

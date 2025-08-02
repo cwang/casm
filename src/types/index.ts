@@ -104,7 +104,8 @@ export interface DevcontainerConfig {
 
 export interface AutopilotConfig {
 	enabled: boolean;
-	model: 'gpt-4' | 'gpt-3.5-turbo';
+	provider: 'openai' | 'anthropic';
+	model: string;
 	maxGuidancesPerHour: number;
 	analysisDelayMs: number;
 }

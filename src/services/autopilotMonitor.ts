@@ -16,7 +16,7 @@ export class AutopilotMonitor extends EventEmitter {
 	constructor(config: AutopilotConfig) {
 		super();
 		this.config = config;
-		this.llmClient = new LLMClient();
+		this.llmClient = new LLMClient(config);
 	}
 
 	isLLMAvailable(): boolean {
@@ -25,6 +25,7 @@ export class AutopilotMonitor extends EventEmitter {
 
 	updateConfig(config: AutopilotConfig): void {
 		this.config = config;
+		this.llmClient.updateConfig(config);
 	}
 
 	enable(session: Session): void {
@@ -110,10 +111,7 @@ export class AutopilotMonitor extends EventEmitter {
 				return; // No output to analyze
 			}
 
-			const decision = await this.llmClient.analyzeClaudeOutput(
-				recentOutput,
-				this.config.model,
-			);
+			const decision = await this.llmClient.analyzeClaudeOutput(recentOutput);
 
 			if (decision.shouldIntervene && decision.guidance) {
 				this.provideGuidance(session, decision);
