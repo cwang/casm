@@ -1,6 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {Box, Text, useInput} from 'ink';
 import SelectInput from 'ink-select-input';
+import TextInput from 'ink-text-input';
 import {AutopilotConfig} from '../types/index.js';
 import {configurationManager} from '../services/configurationManager.js';
 import {LLMClient} from '../services/llmClient.js';
@@ -9,7 +10,12 @@ interface ConfigureAutopilotProps {
 	onComplete: () => void;
 }
 
-type ConfigView = 'menu' | 'provider' | 'model';
+type ConfigView =
+	| 'menu'
+	| 'provider'
+	| 'model'
+	| 'openai-key'
+	| 'anthropic-key';
 
 interface MenuItem {
 	label: string;
@@ -23,13 +29,14 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 	const [config, setConfig] = useState<AutopilotConfig | null>(null);
 	const [hasAnyKeys, setHasAnyKeys] = useState<boolean>(false);
 	const [availableProviders, setAvailableProviders] = useState<string[]>([]);
+	const [inputValue, setInputValue] = useState<string>('');
 
 	useEffect(() => {
 		const currentConfig = configurationManager.getAutopilotConfig();
 
 		// Check API key availability
-		const hasKeys = LLMClient.hasAnyProviderKeys();
-		const availableKeys = LLMClient.getAvailableProviderKeys();
+		const hasKeys = LLMClient.hasAnyProviderKeys(currentConfig);
+		const availableKeys = LLMClient.getAvailableProviderKeys(currentConfig);
 		setHasAnyKeys(hasKeys);
 		setAvailableProviders(availableKeys);
 
@@ -50,10 +57,16 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 
 	const menuItems: MenuItem[] = [
 		{
-			label: hasAnyKeys
-				? `E 🤖 Enable Autopilot: ${config?.enabled ? 'ON' : 'OFF'}`
-				: `E 🤖 Enable Autopilot: DISABLED (No API keys)`,
-			value: hasAnyKeys ? 'toggle-enabled' : 'disabled-no-keys',
+			label: `E 🤖 Enable Autopilot: ${config?.enabled ? 'ON' : 'OFF'}`,
+			value: 'toggle-enabled',
+		},
+		{
+			label: `O 🔑 OpenAI API Key: ${config?.apiKeys?.openai ? '***set***' : 'not set'}`,
+			value: 'openai-key',
+		},
+		{
+			label: `A 🔑 Anthropic API Key: ${config?.apiKeys?.anthropic ? '***set***' : 'not set'}`,
+			value: 'anthropic-key',
 		},
 		// Only show provider and model options if API keys are available
 		...(hasAnyKeys
@@ -116,11 +129,14 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 			} else {
 				setView('menu');
 			}
-		} else if (item.value === 'disabled-no-keys') {
-			// Do nothing for disabled items
-			return;
 		} else if (item.value === 'toggle-enabled') {
 			saveConfig({...config, enabled: !config.enabled});
+		} else if (item.value === 'openai-key') {
+			setInputValue(config.apiKeys?.openai || '');
+			setView('openai-key');
+		} else if (item.value === 'anthropic-key') {
+			setInputValue(config.apiKeys?.anthropic || '');
+			setView('anthropic-key');
 		} else if (item.value === 'provider') {
 			setView('provider');
 		} else if (item.value === 'model') {
@@ -154,6 +170,14 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 					saveConfig({...config, enabled: !config.enabled});
 				}
 				break;
+			case 'o':
+				setInputValue(config?.apiKeys?.openai || '');
+				setView('openai-key');
+				break;
+			case 'a':
+				setInputValue(config?.apiKeys?.anthropic || '');
+				setView('anthropic-key');
+				break;
 			case 'p':
 				if (hasAnyKeys) {
 					setView('provider');
@@ -172,6 +196,42 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 		// Handle escape key
 		if (key.escape) {
 			onComplete();
+		}
+	});
+
+	// Handle API key input submission
+	const handleApiKeySubmit = (
+		value: string,
+		provider: 'openai' | 'anthropic',
+	) => {
+		if (!config) return;
+
+		const newConfig = {
+			...config,
+			apiKeys: {
+				...config.apiKeys,
+				[provider]: value.trim() || undefined,
+			},
+		};
+
+		saveConfig(newConfig);
+
+		// Update state after saving
+		const hasKeys = LLMClient.hasAnyProviderKeys(newConfig);
+		const availableKeys = LLMClient.getAvailableProviderKeys(newConfig);
+		setHasAnyKeys(hasKeys);
+		setAvailableProviders(availableKeys);
+
+		// Return to menu
+		setView('menu');
+	};
+
+	// Handle escape key for API key input views
+	useInput((input, key) => {
+		if (view === 'openai-key' || view === 'anthropic-key') {
+			if (key.escape) {
+				setView('menu');
+			}
 		}
 	});
 
@@ -197,15 +257,13 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 
 				{!openaiAvailable && (
 					<Box marginBottom={1}>
-						<Text color="red">OpenAI: Unavailable (set OPENAI_API_KEY)</Text>
+						<Text color="red">OpenAI: Unavailable (configure API key)</Text>
 					</Box>
 				)}
 
 				{!anthropicAvailable && (
 					<Box marginBottom={1}>
-						<Text color="red">
-							Anthropic: Unavailable (set ANTHROPIC_API_KEY)
-						</Text>
+						<Text color="red">Anthropic: Unavailable (configure API key)</Text>
 					</Box>
 				)}
 
@@ -236,11 +294,7 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 					<Box marginBottom={1}>
 						<Text color="red">
 							⚠️ {config.provider === 'openai' ? 'OpenAI' : 'Anthropic'} API key
-							not available. Set{' '}
-							{config.provider === 'openai'
-								? 'OPENAI_API_KEY'
-								: 'ANTHROPIC_API_KEY'}{' '}
-							environment variable.
+							not configured. Please configure API key in Autopilot settings.
 						</Text>
 					</Box>
 				)}
@@ -251,6 +305,66 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 					isFocused={true}
 					initialIndex={getModelInitialIndex()}
 				/>
+			</Box>
+		);
+	}
+
+	if (view === 'openai-key') {
+		return (
+			<Box flexDirection="column">
+				<Box marginBottom={1}>
+					<Text bold color="green">
+						OpenAI API Key
+					</Text>
+				</Box>
+
+				<Box marginBottom={1}>
+					<Text dimColor>
+						Enter your OpenAI API key (will be saved in CCManager config):
+					</Text>
+				</Box>
+
+				<TextInput
+					value={inputValue}
+					onChange={setInputValue}
+					onSubmit={value => handleApiKeySubmit(value, 'openai')}
+					placeholder="sk-..."
+					focus={true}
+				/>
+
+				<Box marginTop={1}>
+					<Text dimColor>Press Enter to save, Escape to cancel</Text>
+				</Box>
+			</Box>
+		);
+	}
+
+	if (view === 'anthropic-key') {
+		return (
+			<Box flexDirection="column">
+				<Box marginBottom={1}>
+					<Text bold color="green">
+						Anthropic API Key
+					</Text>
+				</Box>
+
+				<Box marginBottom={1}>
+					<Text dimColor>
+						Enter your Anthropic API key (will be saved in CCManager config):
+					</Text>
+				</Box>
+
+				<TextInput
+					value={inputValue}
+					onChange={setInputValue}
+					onSubmit={value => handleApiKeySubmit(value, 'anthropic')}
+					placeholder="sk-ant-..."
+					focus={true}
+				/>
+
+				<Box marginTop={1}>
+					<Text dimColor>Press Enter to save, Escape to cancel</Text>
+				</Box>
 			</Box>
 		);
 	}
@@ -272,8 +386,7 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 			{!hasAnyKeys && (
 				<Box marginBottom={1}>
 					<Text color="red">
-						⚠️ No API keys found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY
-						environment variables to enable Autopilot.
+						⚠️ No API keys configured. Set API keys below to enable Autopilot.
 					</Text>
 				</Box>
 			)}

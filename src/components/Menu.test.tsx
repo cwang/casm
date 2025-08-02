@@ -348,9 +348,13 @@ describe('Menu component rendering', () => {
 
 		// Ensure API keys are available for this test
 		const {LLMClient} = await import('../services/llmClient.js');
-		vi.mocked(LLMClient.hasAnyProviderKeys).mockReturnValue(true);
+		vi.mocked(LLMClient.hasAnyProviderKeys).mockImplementation(config => {
+			return Boolean(
+				config && (config.apiKeys?.openai || config.apiKeys?.anthropic),
+			);
+		});
 
-		// Mock autopilot as enabled
+		// Mock autopilot as enabled with API keys
 		const {configurationManager} = await import(
 			'../services/configurationManager.js'
 		);
@@ -360,6 +364,10 @@ describe('Menu component rendering', () => {
 			model: 'gpt-4.1',
 			maxGuidancesPerHour: 3,
 			analysisDelayMs: 3000,
+			apiKeys: {
+				openai: 'test-key',
+				anthropic: 'test-key-2',
+			},
 		});
 
 		const {lastFrame} = render(
@@ -426,6 +434,10 @@ describe('Menu component rendering', () => {
 			model: 'gpt-4.1',
 			maxGuidancesPerHour: 3,
 			analysisDelayMs: 3000,
+			apiKeys: {
+				openai: 'test-key',
+				anthropic: 'test-key-2',
+			},
 		};
 
 		mockGetAutopilotConfig.mockReturnValue(initialConfig);

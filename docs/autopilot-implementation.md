@@ -87,10 +87,22 @@ export class LLMClient {
     this.config = config;
   }
 
-  // Provider availability checking
+  // Provider availability checking with config-first approach
   isAvailable(): boolean {
     const provider = PROVIDERS[this.config.provider];
-    return Boolean(process.env[provider.requiresKey]);
+    if (!provider) return false;
+    
+    const apiKey = this.getApiKeyForProvider(this.config.provider);
+    return Boolean(apiKey);
+  }
+  
+  private getApiKeyForProvider(provider: SupportedProvider): string | undefined {
+    // First check config, then fall back to environment variables
+    const configKey = this.config.apiKeys?.[provider];
+    if (configKey) return configKey;
+    
+    const envKey = process.env[PROVIDERS[provider].requiresKey];
+    return envKey;
   }
 
   // Unified analysis interface
@@ -188,29 +200,48 @@ setAutopilotConfig(autopilotConfig: AutopilotConfig): void {
 
 ## API Key Configuration
 
-### Environment Variables (Recommended)
+### CCManager Config File (Recommended)
 
-CCManager uses environment variables for API key storage, following security best practices:
+CCManager stores API keys in its configuration file for integrated user experience:
 
-```bash
-# Set up API keys (choose one or both)
-export OPENAI_API_KEY="your-openai-key"
-export ANTHROPIC_API_KEY="your-anthropic-key"
+```typescript
+// AutopilotConfig interface includes API keys
+interface AutopilotConfig {
+  enabled: boolean;
+  provider: 'openai' | 'anthropic';
+  model: string;
+  maxGuidancesPerHour: number;
+  analysisDelayMs: number;
+  apiKeys: {
+    openai?: string;
+    anthropic?: string;
+  };
+}
 ```
 
-### Why Environment Variables?
+**Configuration file locations:**
+- **macOS/Linux**: `~/.config/ccmanager/config.json`
+- **Windows**: `%APPDATA%/ccmanager/config.json`
 
-**Security Benefits:**
-- Keys not stored in plaintext configuration files
-- No risk of accidental exposure through config sharing
-- Follows industry standard practices for credential management
-- Aligns with how other development tools expect API keys
+### API Key Priority
+
+CCManager checks for API keys in this order:
+1. **First priority**: Keys from CCManager config file
+2. **Fallback**: Environment variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`)
+
+### UI-Based Configuration
+
+**Setting API keys through CCManager UI:**
+1. Launch CCManager and press 'C' for Configuration
+2. Select 'Configure Autopilot'
+3. Press 'O' for OpenAI key or 'A' for Anthropic key
+4. Enter your API key and press Enter
 
 **Implementation Details:**
-- Keys are checked at runtime via `process.env[provider.requiresKey]`
-- UI automatically detects available providers based on present keys
+- Keys are checked via `LLMClient.hasAnyProviderKeys(config)`
+- UI automatically detects available providers based on config and env vars
 - No keys = Autopilot shows as "DISABLED"
-- Partial keys = Only available providers shown in configuration
+- Config keys override environment variables when present
 
 ### Getting API Keys
 
@@ -218,26 +249,27 @@ export ANTHROPIC_API_KEY="your-anthropic-key"
 1. Visit [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 2. Create account or sign in
 3. Generate new secret key
-4. Export as `OPENAI_API_KEY` environment variable
+4. Enter into CCManager's Autopilot configuration
 
 **Anthropic API Key:**
 1. Visit [console.anthropic.com](https://console.anthropic.com/)
 2. Create account or sign in
 3. Navigate to API Keys section
 4. Create new key
-5. Export as `ANTHROPIC_API_KEY` environment variable
+5. Enter into CCManager's Autopilot configuration
 
-### Making Keys Persistent
+### Environment Variables (Fallback)
 
-Add to your shell configuration file (`~/.bashrc`, `~/.zshrc`, etc.):
+For users who prefer environment variables:
 
 ```bash
+# Set up API keys (choose one or both)
+export OPENAI_API_KEY="your-openai-key"
+export ANTHROPIC_API_KEY="your-anthropic-key"
+
 # Add to shell profile for persistence
 echo 'export OPENAI_API_KEY="your-key-here"' >> ~/.bashrc
 echo 'export ANTHROPIC_API_KEY="your-key-here"' >> ~/.bashrc
-
-# Reload shell configuration
-source ~/.bashrc
 ```
 
 ## Usage Examples
@@ -245,12 +277,18 @@ source ~/.bashrc
 ### Basic Usage
 
 ```bash
-# Set up API keys (choose one or both)
-export OPENAI_API_KEY="your-openai-key" 
-export ANTHROPIC_API_KEY="your-anthropic-key"
-
 # Start CCManager
 npx ccmanager
+
+# Configure API keys through UI:
+# 1. Press 'C' for Configuration
+# 2. Select 'Configure Autopilot'
+# 3. Press 'O' for OpenAI key or 'A' for Anthropic key
+# 4. Enter your API key and press Enter
+
+# Alternative: Use environment variables as fallback
+export OPENAI_API_KEY="your-openai-key" 
+export ANTHROPIC_API_KEY="your-anthropic-key"
 
 # Access Autopilot via main menu (P key) or Configuration → Configure Autopilot
 # ⚡ Autopilot: ON/OFF/DISABLED based on API key availability

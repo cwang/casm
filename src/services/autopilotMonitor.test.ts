@@ -35,6 +35,10 @@ describe('AutopilotMonitor', () => {
 			model: 'gpt-4.1',
 			maxGuidancesPerHour: 3,
 			analysisDelayMs: 1000,
+			apiKeys: {
+				openai: 'test-openai-key',
+				anthropic: 'test-anthropic-key',
+			},
 		};
 
 		autopilotMonitor = new AutopilotMonitor(config);
@@ -184,9 +188,12 @@ describe('AutopilotMonitor', () => {
 			const newConfig: AutopilotConfig = {
 				enabled: false,
 				provider: 'anthropic',
-				model: 'claude-3-5-sonnet-20241022',
+				model: 'claude-4-sonnet',
 				maxGuidancesPerHour: 5,
 				analysisDelayMs: 2000,
+				apiKeys: {
+					anthropic: 'test-anthropic-key',
+				},
 			};
 
 			autopilotMonitor.updateConfig(newConfig);

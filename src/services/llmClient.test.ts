@@ -8,11 +8,15 @@ vi.mock('ai', () => ({
 }));
 
 vi.mock('@ai-sdk/openai', () => ({
-	openai: vi.fn().mockReturnValue('mock-openai-model'),
+	createOpenAI: vi
+		.fn()
+		.mockReturnValue((model: string) => `mock-openai-model-${model}`),
 }));
 
 vi.mock('@ai-sdk/anthropic', () => ({
-	anthropic: vi.fn().mockReturnValue('mock-anthropic-model'),
+	createAnthropic: vi
+		.fn()
+		.mockReturnValue((model: string) => `mock-anthropic-model-${model}`),
 }));
 
 describe('LLMClient', () => {
@@ -33,6 +37,10 @@ describe('LLMClient', () => {
 			model: 'gpt-4.1',
 			maxGuidancesPerHour: 3,
 			analysisDelayMs: 3000,
+			apiKeys: {
+				openai: 'test-openai-key',
+				anthropic: 'test-anthropic-key',
+			},
 		};
 
 		const ai = await import('ai');
@@ -47,15 +55,40 @@ describe('LLMClient', () => {
 		});
 
 		it('should return false when API key is not available', () => {
+			// Clear environment variables
 			delete process.env['OPENAI_API_KEY'];
-			const clientWithoutKey = new LLMClient(mockConfig);
+			delete process.env['ANTHROPIC_API_KEY'];
+
+			const configWithoutKey = {
+				...mockConfig,
+				apiKeys: {},
+			};
+			const clientWithoutKey = new LLMClient(configWithoutKey);
 			expect(clientWithoutKey.isAvailable()).toBe(false);
+
+			// Restore environment variables for other tests
+			process.env['OPENAI_API_KEY'] = 'test-openai-key';
+			process.env['ANTHROPIC_API_KEY'] = 'test-anthropic-key';
 		});
 
 		it('should work with different providers', () => {
-			const anthropicConfig = {...mockConfig, provider: 'anthropic' as const};
+			const anthropicConfig = {
+				...mockConfig,
+				provider: 'anthropic' as const,
+				apiKeys: {anthropic: 'test-anthropic-key'},
+			};
 			const anthropicClient = new LLMClient(anthropicConfig);
 			expect(anthropicClient.isAvailable()).toBe(true);
+		});
+
+		it('should fallback to environment variables when config key not available', () => {
+			// Config without API keys, but env vars are set
+			const configWithoutKeys = {
+				...mockConfig,
+				apiKeys: {},
+			};
+			const client = new LLMClient(configWithoutKeys);
+			expect(client.isAvailable()).toBe(true); // Should use env var
 		});
 	});
 
@@ -72,7 +105,11 @@ describe('LLMClient', () => {
 		});
 
 		it('should return supported models for Anthropic', () => {
-			const anthropicConfig = {...mockConfig, provider: 'anthropic' as const};
+			const anthropicConfig = {
+				...mockConfig,
+				provider: 'anthropic' as const,
+				apiKeys: {anthropic: 'test-anthropic-key'},
+			};
 			const anthropicClient = new LLMClient(anthropicConfig);
 			const models = anthropicClient.getSupportedModels();
 			expect(models).toContain('claude-4-sonnet');
@@ -112,7 +149,7 @@ describe('LLMClient', () => {
 
 			expect(result).toEqual(mockResponse);
 			expect(mockGenerateText).toHaveBeenCalledWith({
-				model: 'mock-openai-model',
+				model: 'mock-openai-model-gpt-4.1',
 				prompt: expect.stringContaining('Claude Code terminal output'),
 				temperature: 0.3,
 			});
@@ -159,14 +196,25 @@ describe('LLMClient', () => {
 		});
 
 		it('should return no intervention when API key is not available', async () => {
+			// Clear environment variables
 			delete process.env['OPENAI_API_KEY'];
-			const clientWithoutKey = new LLMClient(mockConfig);
+			delete process.env['ANTHROPIC_API_KEY'];
+
+			const configWithoutKey = {
+				...mockConfig,
+				apiKeys: {},
+			};
+			const clientWithoutKey = new LLMClient(configWithoutKey);
 
 			const result = await clientWithoutKey.analyzeClaudeOutput('Some output');
 
 			expect(result.shouldIntervene).toBe(false);
 			expect(result.confidence).toBe(0);
 			expect(result.reasoning).toContain('API key not available');
+
+			// Restore environment variables for other tests
+			process.env['OPENAI_API_KEY'] = 'test-openai-key';
+			process.env['ANTHROPIC_API_KEY'] = 'test-anthropic-key';
 		});
 
 		it('should validate unsupported models', async () => {
@@ -187,9 +235,12 @@ describe('LLMClient', () => {
 			const newConfig: AutopilotConfig = {
 				enabled: false,
 				provider: 'anthropic',
-				model: 'claude-3-5-sonnet-20241022',
+				model: 'claude-4-sonnet',
 				maxGuidancesPerHour: 5,
 				analysisDelayMs: 2000,
+				apiKeys: {
+					anthropic: 'test-anthropic-key',
+				},
 			};
 
 			llmClient.updateConfig(newConfig);
@@ -210,6 +261,67 @@ describe('LLMClient', () => {
 				provider: 'OpenAI',
 				models: expect.arrayContaining(['gpt-4.1']),
 			});
+		});
+
+		it('should check provider availability with config', () => {
+			// Clear environment variables to test config-only behavior
+			delete process.env['OPENAI_API_KEY'];
+			delete process.env['ANTHROPIC_API_KEY'];
+
+			const configWithOpenAI = {
+				...mockConfig,
+				apiKeys: {openai: 'test-key'},
+			};
+			expect(LLMClient.isProviderAvailable('openai', configWithOpenAI)).toBe(
+				true,
+			);
+			expect(LLMClient.isProviderAvailable('anthropic', configWithOpenAI)).toBe(
+				false,
+			);
+
+			// Restore environment variables
+			process.env['OPENAI_API_KEY'] = 'test-openai-key';
+			process.env['ANTHROPIC_API_KEY'] = 'test-anthropic-key';
+		});
+
+		it('should fallback to environment variables when no config provided', () => {
+			// Environment variables are already set in beforeEach
+			expect(LLMClient.isProviderAvailable('openai')).toBe(true);
+			expect(LLMClient.isProviderAvailable('anthropic')).toBe(true);
+		});
+
+		it('should get available provider keys from config', () => {
+			const configWithBoth = {
+				...mockConfig,
+				apiKeys: {
+					openai: 'test-openai-key',
+					anthropic: 'test-anthropic-key',
+				},
+			};
+			const availableKeys = LLMClient.getAvailableProviderKeys(configWithBoth);
+			expect(availableKeys).toContain('openai');
+			expect(availableKeys).toContain('anthropic');
+		});
+
+		it('should check if any provider keys are available', () => {
+			// Clear environment variables to test config-only behavior
+			delete process.env['OPENAI_API_KEY'];
+			delete process.env['ANTHROPIC_API_KEY'];
+
+			const configWithKeys = {
+				...mockConfig,
+				apiKeys: {openai: 'test-key'},
+			};
+			const configWithoutKeys = {
+				...mockConfig,
+				apiKeys: {},
+			};
+			expect(LLMClient.hasAnyProviderKeys(configWithKeys)).toBe(true);
+			expect(LLMClient.hasAnyProviderKeys(configWithoutKeys)).toBe(false);
+
+			// Restore environment variables
+			process.env['OPENAI_API_KEY'] = 'test-openai-key';
+			process.env['ANTHROPIC_API_KEY'] = 'test-anthropic-key';
 		});
 	});
 });

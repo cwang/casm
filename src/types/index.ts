@@ -108,6 +108,10 @@ export interface AutopilotConfig {
 	model: string;
 	maxGuidancesPerHour: number;
 	analysisDelayMs: number;
+	apiKeys: {
+		openai?: string;
+		anthropic?: string;
+	};
 }
 
 export interface AutopilotDecision {

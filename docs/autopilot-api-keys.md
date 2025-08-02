@@ -2,89 +2,105 @@
 
 ## Overview
 
-CCManager's Autopilot feature requires LLM API keys to function. This guide explains how to set up and manage these keys securely.
+CCManager's Autopilot feature requires LLM API keys to function. This guide explains how to set up and manage these keys using CCManager's built-in configuration system.
 
-## Why Environment Variables?
+## Why CCManager Config Storage?
 
-CCManager uses environment variables for API key storage, which is the recommended approach for several reasons:
+CCManager stores API keys in its own configuration file, providing a seamless user experience:
 
-### Security Benefits ✅
-- **No plaintext storage**: Keys are not saved in configuration files
-- **Accidental exposure prevention**: Config files can be safely shared without revealing keys
-- **Industry standard**: Follows 12-factor app methodology for credential management
-- **Isolation**: Keys don't appear in CCManager config backups or exports
+### User Experience Benefits ✅
+- **Integrated configuration**: Manage all Autopilot settings in one place
+- **Easy setup**: Configure API keys directly through the CCManager UI
+- **No environment setup**: No need to modify shell configuration files
+- **Cross-session persistence**: Keys automatically available whenever you use CCManager
+- **Backup and restore**: API keys included when backing up CCManager configuration
 
-### Development Best Practices ✅
-- **Aligns with Claude Code**: Follows the same pattern as the tools you're already using
-- **Cross-tool compatibility**: Same keys work with other LLM tools
-- **Process isolation**: Keys are available to the application at runtime only
+### Development Convenience ✅
+- **Self-contained**: All configuration in CCManager's control
+- **UI-driven setup**: Visual interface for key management
+- **Immediate feedback**: Real-time validation of API key availability
+- **Platform agnostic**: Works consistently across different operating systems
 
-## Alternative: Config File Storage (Not Recommended)
+## Fallback: Environment Variables
 
-While we could store API keys in CCManager's config file (`~/.config/ccmanager/config.json`), this approach has significant drawbacks:
+CCManager also supports environment variables as a fallback option for users who prefer that approach:
 
-### Security Risks ❌
-- **Plaintext exposure**: Keys stored in readable text files
-- **Accidental sharing**: Config files might be shared or committed to version control
-- **File permissions**: Requires careful management of file permissions
-- **Backup exposure**: Keys included in any config backups
+### When Environment Variables Are Used
+- If no API key is configured in CCManager's config file
+- CCManager will automatically check for `OPENAI_API_KEY` and `ANTHROPIC_API_KEY`
+- Provides backward compatibility with existing setups
 
-### Implementation Complexity ❌
-- **Encryption overhead**: Would need to implement secure key encryption/decryption
-- **Key rotation**: More complex to update keys when they expire
-- **Platform differences**: Different security models across operating systems
+### Priority Order
+1. **First priority**: API keys from CCManager config file
+2. **Fallback**: Environment variables if config keys are not set
 
-## Recommended Setup: Environment Variables
+## Setting Up API Keys
 
-### 1. Setting Keys Temporarily
+### Method 1: Through CCManager UI (Recommended)
 
-For immediate testing:
+1. **Launch CCManager** and navigate to the main menu
+2. **Press 'C'** to open Configuration menu
+3. **Select 'Configure Autopilot'**
+4. **Configure API keys**:
+   - Press 'O' to set OpenAI API key
+   - Press 'A' to set Anthropic API key
+5. **Enter your API key** when prompted
+6. **Press Enter** to save
+
+The API keys will be saved to `~/.config/ccmanager/config.json` (or equivalent on Windows).
+
+### Method 2: Direct Config File Edit
+
+You can also edit the configuration file directly:
+
+```json
+{
+  "autopilot": {
+    "enabled": false,
+    "provider": "openai",
+    "model": "gpt-4.1",
+    "maxGuidancesPerHour": 3,
+    "analysisDelayMs": 3000,
+    "apiKeys": {
+      "openai": "your-openai-key-here",
+      "anthropic": "your-anthropic-key-here"
+    }
+  }
+}
+```
+
+**Config file locations**:
+- **macOS/Linux**: `~/.config/ccmanager/config.json`
+- **Windows**: `%APPDATA%/ccmanager/config.json`
+
+### Method 3: Environment Variables (Fallback)
+
+For users who prefer environment variables:
 
 ```bash
-# Set for current session only
+# Set for current session
 export OPENAI_API_KEY="your-openai-key-here"
 export ANTHROPIC_API_KEY="your-anthropic-key-here"
 
-# Verify keys are set
-echo $OPENAI_API_KEY
-echo $ANTHROPIC_API_KEY
-```
-
-### 2. Making Keys Persistent
-
-For permanent setup, add to your shell configuration:
-
-```bash
-# For Bash users (~/.bashrc or ~/.bash_profile)
+# Make persistent (add to ~/.bashrc, ~/.zshrc, etc.)
 echo 'export OPENAI_API_KEY="your-openai-key-here"' >> ~/.bashrc
 echo 'export ANTHROPIC_API_KEY="your-anthropic-key-here"' >> ~/.bashrc
-
-# For Zsh users (~/.zshrc)
-echo 'export OPENAI_API_KEY="your-openai-key-here"' >> ~/.zshrc
-echo 'export ANTHROPIC_API_KEY="your-anthropic-key-here"' >> ~/.zshrc
-
-# For Fish users (~/.config/fish/config.fish)
-echo 'set -gx OPENAI_API_KEY "your-openai-key-here"' >> ~/.config/fish/config.fish
-echo 'set -gx ANTHROPIC_API_KEY "your-anthropic-key-here"' >> ~/.config/fish/config.fish
-
-# Reload your shell configuration
-source ~/.bashrc  # or ~/.zshrc, etc.
 ```
 
-### 3. Obtaining API Keys
+## Obtaining API Keys
 
-#### OpenAI API Key
+### OpenAI API Key
 
 1. **Visit**: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 2. **Sign in** or create an account
 3. **Click**: "Create new secret key"
 4. **Name**: Give it a descriptive name (e.g., "CCManager Autopilot")
 5. **Copy**: The generated key (you won't see it again)
-6. **Set**: Export as `OPENAI_API_KEY` environment variable
+6. **Enter**: Into CCManager's Autopilot configuration
 
 **Available Models**: GPT-4.1, o4-mini, o3
 
-#### Anthropic API Key
+### Anthropic API Key
 
 1. **Visit**: [console.anthropic.com](https://console.anthropic.com/)
 2. **Sign in** or create an account
@@ -92,7 +108,7 @@ source ~/.bashrc  # or ~/.zshrc, etc.
 4. **Click**: "Create Key"
 5. **Name**: Give it a descriptive name
 6. **Copy**: The generated key
-7. **Set**: Export as `ANTHROPIC_API_KEY` environment variable
+7. **Enter**: Into CCManager's Autopilot configuration
 
 **Available Models**: Claude 4 Sonnet, Claude 4 Opus
 
@@ -103,75 +119,117 @@ source ~/.bashrc  # or ~/.zshrc, etc.
 CCManager automatically detects which API keys are available:
 
 ```typescript
-// Runtime detection
-LLMClient.hasAnyProviderKeys()           // Returns: true/false
-LLMClient.getAvailableProviderKeys()     // Returns: ['openai', 'anthropic']
-LLMClient.isProviderAvailable('openai') // Returns: true/false
+// Runtime detection with config priority
+LLMClient.hasAnyProviderKeys(config)           // Returns: true/false
+LLMClient.getAvailableProviderKeys(config)     // Returns: ['openai', 'anthropic']
+LLMClient.isProviderAvailable('openai', config) // Returns: true/false
 ```
 
 ### UI Behavior
 
-- **No keys**: Autopilot shows as "DISABLED"
-- **Some keys**: Only available providers appear in configuration
+- **No keys**: Autopilot shows as "DISABLED", displays warning message
+- **Keys configured**: Shows "***set***" for configured keys
+- **Some keys**: Only available providers appear in provider selection
 - **All keys**: Full provider choice available
 
-### Error Handling
+### Configuration Flow
 
-CCManager provides clear feedback when keys are missing:
+1. **API Key Status**: Main menu shows current autopilot status
+2. **Configuration Menu**: Press 'C' → Configure Autopilot
+3. **Key Management**: Press 'O' or 'A' to configure individual keys
+4. **Real-time Updates**: UI immediately reflects key availability changes
+5. **Provider Selection**: Only shows providers with valid API keys
 
-- Configuration screen shows warnings for missing keys
-- Provider selection filtered to available options only
-- Clear error messages guide users to set up missing keys
+## Security Considerations
 
-## Security Best Practices
+### Config File Approach
 
-### Do ✅
-- Store keys in environment variables
-- Use descriptive names when creating keys on provider platforms
+**Pros**:
+- Integrated user experience
+- No shell configuration required
+- Backed up with other CCManager settings
+
+**Cons**:
+- Keys stored in plaintext in config file
+- Config file could be accidentally shared
+
+### Security Best Practices
+
+#### Do ✅
+- Set appropriate file permissions on config directory (`chmod 700 ~/.config/ccmanager`)
 - Regularly rotate your API keys
 - Monitor your API usage on provider dashboards
 - Set up billing alerts to prevent unexpected charges
+- Back up config files securely
 
-### Don't ❌
-- Store keys in configuration files
-- Commit keys to version control
-- Share keys in plain text (email, chat, etc.)
+#### Don't ❌
+- Share config files without removing API keys first
+- Commit config files with keys to version control
 - Use the same key across multiple applications in production
 - Leave unused keys active
+
+### File Permissions
+
+CCManager automatically creates the config directory with appropriate permissions, but you can manually secure it:
+
+```bash
+# Secure the config directory
+chmod 700 ~/.config/ccmanager
+chmod 600 ~/.config/ccmanager/config.json
+```
 
 ## Troubleshooting
 
 ### Keys Not Detected
 
-```bash
-# Check if keys are properly set
-env | grep API_KEY
+1. **Check configuration**:
+   ```bash
+   # View current config
+   cat ~/.config/ccmanager/config.json
+   ```
 
-# Restart your terminal/shell
-# CCManager reads environment variables at startup
-```
+2. **Restart CCManager** to reload configuration
+
+3. **Verify key format**: Ensure no extra spaces or characters
 
 ### Provider Not Available
 
-1. Verify the key is set correctly
-2. Check the key hasn't expired on the provider platform
-3. Ensure you have credits/quota available
-4. Restart CCManager to re-read environment variables
+1. **Check key validity**: Verify the key format and hasn't expired
+2. **Test through UI**: Use CCManager's configuration menu to re-enter the key
+3. **Check provider status**: Ensure you have credits/quota available
+4. **Validate key**: Test the key using provider's API documentation
+
+### Configuration Menu Issues
+
+1. **No API key options visible**: May indicate CCManager needs to be updated
+2. **Keys show as "not set"**: Check config file format and permissions
+3. **Cannot save keys**: Ensure config directory is writable
 
 ### Testing Key Validity
 
-CCManager will show connection errors in the UI if keys are invalid. You can also test directly:
+You can test API keys manually:
 
 ```bash
 # Test OpenAI key
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+curl -H "Authorization: Bearer your-key-here" \
      https://api.openai.com/v1/models
 
 # Test Anthropic key  
-curl -H "x-api-key: $ANTHROPIC_API_KEY" \
+curl -H "x-api-key: your-key-here" \
+     -H "Content-Type: application/json" \
      https://api.anthropic.com/v1/messages
 ```
 
+## Migration from Environment Variables
+
+If you previously used environment variables:
+
+1. **Open CCManager** and navigate to Autopilot configuration
+2. **Enter your keys** through the UI (CCManager will automatically use these instead of environment variables)
+3. **Optional**: Remove environment variables from your shell configuration if desired
+
+CCManager will continue to work with environment variables as a fallback, so migration is optional.
+
 ## Summary
 
-Environment variables provide the best balance of security, usability, and industry standard practices for API key management in CCManager. While config file storage might seem more user-friendly, the security risks outweigh the convenience benefits for sensitive credentials like LLM API keys.
+CCManager's config-based API key storage provides an integrated, user-friendly approach to managing LLM credentials. The built-in UI makes setup straightforward, while environment variable fallback ensures compatibility with existing workflows. Choose the method that best fits your security requirements and workflow preferences.

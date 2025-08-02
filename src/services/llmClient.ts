@@ -1,6 +1,6 @@
 import {generateText, type LanguageModel} from 'ai';
-import {openai} from '@ai-sdk/openai';
-import {anthropic} from '@ai-sdk/anthropic';
+import {createOpenAI} from '@ai-sdk/openai';
+import {createAnthropic} from '@ai-sdk/anthropic';
 import type {AutopilotDecision, AutopilotConfig} from '../types/index.js';
 
 type SupportedProvider = 'openai' | 'anthropic';
@@ -16,13 +16,19 @@ const PROVIDERS: Record<SupportedProvider, ProviderInfo> = {
 	openai: {
 		name: 'OpenAI',
 		models: ['gpt-4.1', 'o4-mini', 'o3'],
-		createModel: (model: string) => openai(model),
+		createModel: (model: string) => {
+			const provider = createOpenAI();
+			return provider(model);
+		},
 		requiresKey: 'OPENAI_API_KEY',
 	},
 	anthropic: {
 		name: 'Anthropic',
 		models: ['claude-4-sonnet', 'claude-4-opus'],
-		createModel: (model: string) => anthropic(model),
+		createModel: (model: string) => {
+			const provider = createAnthropic();
+			return provider(model);
+		},
 		requiresKey: 'ANTHROPIC_API_KEY',
 	},
 };
@@ -42,8 +48,34 @@ export class LLMClient {
 		const provider = PROVIDERS[this.config.provider];
 		if (!provider) return false;
 
-		const apiKey = process.env[provider.requiresKey];
+		const apiKey = this.getApiKeyForProvider(this.config.provider);
 		return Boolean(apiKey);
+	}
+
+	private getApiKeyForProvider(
+		provider: SupportedProvider,
+	): string | undefined {
+		// First check config, then fall back to environment variables for backward compatibility
+		const configKey = this.config.apiKeys?.[provider];
+		if (configKey) return configKey;
+
+		const envKey = process.env[PROVIDERS[provider].requiresKey];
+		return envKey;
+	}
+
+	private createModelWithApiKey(
+		provider: SupportedProvider,
+		model: string,
+		apiKey: string,
+	) {
+		switch (provider) {
+			case 'openai':
+				return createOpenAI({apiKey})(model);
+			case 'anthropic':
+				return createAnthropic({apiKey})(model);
+			default:
+				throw new Error(`Unknown provider: ${provider}`);
+		}
 	}
 
 	getCurrentProviderName(): string {
@@ -56,22 +88,32 @@ export class LLMClient {
 		return provider?.models ?? [];
 	}
 
-	static isProviderAvailable(provider: SupportedProvider): boolean {
+	static isProviderAvailable(
+		provider: SupportedProvider,
+		config?: AutopilotConfig,
+	): boolean {
 		const providerInfo = PROVIDERS[provider];
 		if (!providerInfo) return false;
+
+		// First check config if provided, then fall back to environment variables
+		if (config?.apiKeys?.[provider]) {
+			return Boolean(config.apiKeys[provider]);
+		}
 
 		const apiKey = process.env[providerInfo.requiresKey];
 		return Boolean(apiKey);
 	}
 
-	static getAvailableProviderKeys(): SupportedProvider[] {
+	static getAvailableProviderKeys(
+		config?: AutopilotConfig,
+	): SupportedProvider[] {
 		return Object.keys(PROVIDERS).filter(provider =>
-			LLMClient.isProviderAvailable(provider as SupportedProvider),
+			LLMClient.isProviderAvailable(provider as SupportedProvider, config),
 		) as SupportedProvider[];
 	}
 
-	static hasAnyProviderKeys(): boolean {
-		return LLMClient.getAvailableProviderKeys().length > 0;
+	static hasAnyProviderKeys(config?: AutopilotConfig): boolean {
+		return LLMClient.getAvailableProviderKeys(config).length > 0;
 	}
 
 	getAvailableProviders(): Array<{
@@ -79,10 +121,10 @@ export class LLMClient {
 		models: string[];
 		available: boolean;
 	}> {
-		return Object.entries(PROVIDERS).map(([_key, provider]) => ({
+		return Object.entries(PROVIDERS).map(([key, provider]) => ({
 			name: provider.name,
 			models: provider.models,
-			available: Boolean(process.env[provider.requiresKey]),
+			available: Boolean(this.getApiKeyForProvider(key as SupportedProvider)),
 		}));
 	}
 
@@ -114,7 +156,20 @@ export class LLMClient {
 		}
 
 		try {
-			const model = provider.createModel(this.config.model);
+			const apiKey = this.getApiKeyForProvider(this.config.provider);
+			if (!apiKey) {
+				return {
+					shouldIntervene: false,
+					confidence: 0,
+					reasoning: `API key not available for ${provider.name}`,
+				};
+			}
+
+			const model = this.createModelWithApiKey(
+				this.config.provider,
+				this.config.model,
+				apiKey,
+			);
 			const prompt = this.buildAnalysisPrompt(output);
 
 			const {text} = await generateText({

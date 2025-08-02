@@ -116,7 +116,7 @@ const Menu: React.FC<MenuProps> = ({
 		setAutopilotEnabled(autopilotConfig?.enabled || false);
 
 		// Check API key availability
-		setHasApiKeys(LLMClient.hasAnyProviderKeys());
+		setHasApiKeys(LLMClient.hasAnyProviderKeys(autopilotConfig));
 
 		// Update sessions
 		const updateSessions = () => {

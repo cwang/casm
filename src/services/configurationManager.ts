@@ -99,7 +99,13 @@ export class ConfigurationManager {
 				model: 'gpt-4.1',
 				maxGuidancesPerHour: 3,
 				analysisDelayMs: 3000,
+				apiKeys: {},
 			};
+		}
+
+		// Ensure apiKeys object exists for existing configs
+		if (!this.config.autopilot.apiKeys) {
+			this.config.autopilot.apiKeys = {};
 		}
 	}
 
@@ -323,6 +329,7 @@ export class ConfigurationManager {
 				model: 'gpt-4.1',
 				maxGuidancesPerHour: 3,
 				analysisDelayMs: 3000,
+				apiKeys: {},
 			}
 		);
 	}
