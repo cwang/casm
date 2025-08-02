@@ -1076,5 +1076,75 @@ describe('SessionManager', () => {
 				expect(formatted).toBe('');
 			});
 		});
+
+		it('should populate session.output for autopilot monitoring', async () => {
+			// Setup mock preset
+			vi.mocked(configurationManager.getDefaultPreset).mockReturnValue({
+				id: '1',
+				name: 'Claude',
+				command: 'claude',
+				args: [],
+			});
+
+			// Setup spawn mock
+			vi.mocked(spawn).mockReturnValue(mockPty as unknown as IPty);
+
+			const session =
+				await sessionManager.createSessionWithPreset('/test/path');
+
+			// Simulate PTY data output
+			const testOutput =
+				'Claude Code started\nReady for input\nWorking on task...';
+			const dataHandler = mockPty.onData.mock.calls[0]?.[0];
+			expect(dataHandler).toBeDefined();
+			dataHandler!(testOutput);
+
+			// Verify session.output is populated for autopilot
+			expect(session.output).toEqual([
+				'Claude Code started',
+				'Ready for input',
+				'Working on task...',
+			]);
+
+			// Test that subsequent output is appended
+			dataHandler!('\nProcessing...\nComplete!');
+			expect(session.output).toEqual([
+				'Claude Code started',
+				'Ready for input',
+				'Working on task...',
+				'',
+				'Processing...',
+				'Complete!',
+			]);
+		});
+
+		it('should limit session.output lines to prevent memory issues', async () => {
+			// Setup mock preset
+			vi.mocked(configurationManager.getDefaultPreset).mockReturnValue({
+				id: '1',
+				name: 'Claude',
+				command: 'claude',
+				args: [],
+			});
+
+			// Setup spawn mock
+			vi.mocked(spawn).mockReturnValue(mockPty as unknown as IPty);
+
+			const session =
+				await sessionManager.createSessionWithPreset('/test/path');
+
+			// Simulate many lines of output
+			const dataHandler = mockPty.onData.mock.calls[0]?.[0];
+			expect(dataHandler).toBeDefined();
+
+			// Generate 250 lines (more than the 200 line limit)
+			for (let i = 0; i < 250; i++) {
+				dataHandler!(`Line ${i}\n`);
+			}
+
+			// Should only keep the last 200 lines
+			expect(session.output.length).toBeLessThanOrEqual(201); // 200 + possible empty line
+			expect(session.output[session.output.length - 2]).toBe('Line 249'); // Last complete line
+		});
 	});
 });

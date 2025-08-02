@@ -155,6 +155,16 @@ export class SessionManager extends EventEmitter implements ISessionManager {
 			const buffer = Buffer.from(data, 'utf8');
 			session.outputHistory.push(buffer);
 
+			// Update session.output for autopilot monitoring
+			const lines = data.split('\n');
+			session.output.push(...lines);
+
+			// Keep only recent lines for autopilot analysis (limit memory usage)
+			const MAX_OUTPUT_LINES = 200;
+			if (session.output.length > MAX_OUTPUT_LINES) {
+				session.output = session.output.slice(-MAX_OUTPUT_LINES);
+			}
+
 			// Limit memory usage - keep max 10MB of output history
 			const MAX_HISTORY_SIZE = 10 * 1024 * 1024; // 10MB
 			let totalSize = session.outputHistory.reduce(
