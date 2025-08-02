@@ -20,6 +20,7 @@ import {RecentProject} from '../types/index.js';
 import TextInputWrapper from './TextInputWrapper.js';
 import {useSearchMode} from '../hooks/useSearchMode.js';
 import {globalSessionOrchestrator} from '../services/globalSessionOrchestrator.js';
+import {configurationManager} from '../services/configurationManager.js';
 
 interface MenuProps {
 	sessionManager: SessionManager;
@@ -83,6 +84,7 @@ const Menu: React.FC<MenuProps> = ({
 	const [sessions, setSessions] = useState<Session[]>([]);
 	const [items, setItems] = useState<MenuItem[]>([]);
 	const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
+	const [autopilotEnabled, setAutopilotEnabled] = useState<boolean>(false);
 
 	// Use the search mode hook
 	const {isSearchMode, searchQuery, selectedIndex, setSearchQuery} =
@@ -106,6 +108,10 @@ const Menu: React.FC<MenuProps> = ({
 			);
 			setRecentProjects(filteredProjects);
 		}
+
+		// Load autopilot configuration
+		const autopilotConfig = configurationManager.getAutopilotConfig();
+		setAutopilotEnabled(autopilotConfig.enabled);
 
 		// Update sessions
 		const updateSessions = () => {
@@ -243,6 +249,11 @@ const Menu: React.FC<MenuProps> = ({
 				},
 				{
 					type: 'common',
+					label: `P ✈️  Autopilot: ${autopilotEnabled ? 'ON' : 'OFF'}`,
+					value: 'toggle-autopilot',
+				},
+				{
+					type: 'common',
 					label: `C ${MENU_ICONS.CONFIGURE_SHORTCUTS} Configuration`,
 					value: 'configuration',
 				},
@@ -274,6 +285,7 @@ const Menu: React.FC<MenuProps> = ({
 		recentProjects,
 		searchQuery,
 		isSearchMode,
+		autopilotEnabled,
 	]);
 
 	// Handle hotkeys
@@ -351,6 +363,14 @@ const Menu: React.FC<MenuProps> = ({
 					hasSession: false,
 				});
 				break;
+			case 'p': {
+				// Toggle autopilot
+				const currentConfig = configurationManager.getAutopilotConfig();
+				const newConfig = {...currentConfig, enabled: !currentConfig.enabled};
+				configurationManager.setAutopilotConfig(newConfig);
+				setAutopilotEnabled(newConfig.enabled);
+				break;
+			}
 			case 'c':
 				// Trigger configuration action
 				onSelectWorktree({
@@ -424,6 +444,12 @@ const Menu: React.FC<MenuProps> = ({
 				isMainWorktree: false,
 				hasSession: false,
 			});
+		} else if (item.value === 'toggle-autopilot') {
+			// Toggle autopilot
+			const currentConfig = configurationManager.getAutopilotConfig();
+			const newConfig = {...currentConfig, enabled: !currentConfig.enabled};
+			configurationManager.setAutopilotConfig(newConfig);
+			setAutopilotEnabled(newConfig.enabled);
 		} else if (item.value === 'configuration') {
 			// Handle in parent component - use special marker
 			onSelectWorktree({
@@ -533,10 +559,10 @@ const Menu: React.FC<MenuProps> = ({
 					{isSearchMode
 						? 'Search Mode: Type to filter, Enter to exit search, ESC to exit search'
 						: searchQuery
-							? `Filtered: "${searchQuery}" | ↑↓ Navigate Enter Select | /-Search ESC-Clear 0-9 Quick Select N-New M-Merge D-Delete C-Config ${
+							? `Filtered: "${searchQuery}" | ↑↓ Navigate Enter Select | /-Search ESC-Clear 0-9 Quick Select N-New M-Merge D-Delete P-Autopilot C-Config ${
 									projectName ? 'B-Back' : 'Q-Quit'
 								}`
-							: `Controls: ↑↓ Navigate Enter Select | Hotkeys: 0-9 Quick Select /-Search N-New M-Merge D-Delete C-Config ${
+							: `Controls: ↑↓ Navigate Enter Select | Hotkeys: 0-9 Quick Select /-Search N-New M-Merge D-Delete P-Autopilot C-Config ${
 									projectName ? 'B-Back' : 'Q-Quit'
 								}`}
 				</Text>
