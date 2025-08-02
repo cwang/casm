@@ -4,30 +4,47 @@
 
 This document defines the modular package structure for the remote communication system, showing how packages interact and how external projects can integrate with the system.
 
-## CCManager Project Structure
+## Monorepo Structure for NPM Distribution
+
+```
+remote-communication/
+├── packages/
+│   ├── core/                           # @remote-comm/core
+│   ├── adapters/
+│   │   ├── telegram/                   # @remote-comm/telegram-adapter
+│   │   ├── slack/                      # @remote-comm/slack-adapter
+│   │   └── voice-synthesis/            # @remote-comm/voice-synthesis
+│   ├── integrations/
+│   │   ├── ccmanager/                  # @remote-comm/ccmanager-integration
+│   │   └── ccmanager-ui/               # @remote-comm/ccmanager-ui
+│   └── tools/
+│       └── dev-utils/                  # @remote-comm/dev-utils
+├── examples/
+│   ├── vim-plugin/                     # Vim integration example
+│   ├── vscode-extension/               # VS Code extension example
+│   ├── generic-cli-tool/               # Minimal CLI tool example
+│   └── custom-adapter/                 # Custom adapter example
+├── docs/
+│   ├── integration-guide.md
+│   ├── plugin-development.md
+│   ├── api-reference.md
+│   └── examples/
+├── tools/
+│   ├── build-scripts/
+│   └── testing-utils/
+├── package.json                        # Root package.json for monorepo
+└── README.md                          # Main project documentation
+```
+
+## CCManager Integration Structure
 
 ```
 ccmanager/
 ├── src/                                # Existing CCManager source
-├── remote-control/                     # New dedicated namespace
-│   ├── core/                          # Core communication system
-│   ├── adapters/
-│   │   ├── telegram/                  # Telegram adapter
-│   │   ├── slack/                     # Slack adapter
-│   │   └── voice-synthesis/           # OpenAI TTS/STT integration
-│   ├── integration/
-│   │   ├── ccmanager/                 # CCManager-specific integration
-│   │   └── ui/                        # CCManager UI components
-│   ├── examples/
-│   │   ├── vim-plugin/                # Vim integration example
-│   │   ├── vscode-extension/          # VS Code extension example
-│   │   └── generic-cli-tool/          # Minimal CLI tool example
-│   └── docs/
-│       ├── integration-guide.md
-│       ├── adapter-development.md
-│       └── api-reference.md
-├── package.json                       # Updated with remote-control dependencies
-└── README.md                         # Updated documentation
+├── package.json                       # Updated with @remote-comm dependencies
+├── README.md                          # Updated documentation
+└── docs/
+    └── remote-communication.md        # Integration documentation
 ```
 
 ## Package Dependencies
@@ -43,26 +60,25 @@ ccmanager/
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                Integration Layer                                │
+│                Integration Packages                             │
 │  ┌─────────────────────────────┐  ┌───────────────────────────┐ │
-│  │ remote-control/            │  │ remote-control/           │ │
-│  │ integration/ccmanager      │  │ integration/ui            │ │
+│  │ @remote-comm/              │  │ @remote-comm/             │ │
+│  │ ccmanager-integration      │  │ ccmanager-ui              │ │
 │  └─────────────────────────────┘  └───────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      Core System                                │
-│                 remote-control/core                             │
+│                      Core Package                               │
+│                 @remote-comm/core                               │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                   Adapter Modules                              │
+│                   Adapter Packages                             │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │ remote-control/ │  │ remote-control/ │  │ remote-control/ │ │
-│  │ adapters/       │  │ adapters/       │  │ adapters/       │ │
-│  │ telegram        │  │ slack           │  │ voice-synthesis │ │
+│  │ @remote-comm/   │  │ @remote-comm/   │  │ @remote-comm/   │ │
+│  │ telegram-adapter│  │ slack-adapter   │  │ voice-synthesis │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -531,3 +547,60 @@ const availableAdapters = await discoverAdapters([
 6. **Versioning**: Independent versioning for each component
 7. **Distribution**: Easy NPM publishing and consumption
 8. **Integration**: Clear integration points for any host application
+
+## NPM Distribution Strategy
+
+### Publishing Approach
+
+#### Phase 1: Internal Development
+- Develop packages within monorepo
+- Use workspace dependencies for cross-package references
+- Test integration across all packages
+
+#### Phase 2: Alpha Release
+- Publish core packages to NPM with `@remote-comm` namespace
+- Tag as alpha versions (e.g., `1.0.0-alpha.1`)
+- Limited community testing and feedback
+
+#### Phase 3: Beta Release  
+- Stabilize APIs and interfaces
+- Add comprehensive documentation
+- Community integration testing
+- Tag as beta versions (e.g., `1.0.0-beta.1`)
+
+#### Phase 4: Stable Release
+- Full documentation and examples
+- Production-ready packages
+- Semantic versioning (e.g., `1.0.0`)
+- Community support and maintenance
+
+### Package Release Order
+
+1. **@remote-comm/core** - Foundation package
+2. **@remote-comm/voice-synthesis** - Voice services
+3. **@remote-comm/telegram-adapter** - Telegram integration
+4. **@remote-comm/slack-adapter** - Slack integration
+5. **@remote-comm/ccmanager-integration** - CCManager specific
+6. **@remote-comm/ccmanager-ui** - CCManager UI components
+
+### Benefits of Package-Based Architecture
+
+#### For External Adoption
+- **Easy Installation**: `npm install @remote-comm/core @remote-comm/telegram-adapter`
+- **Selective Usage**: Only install needed adapters
+- **Version Management**: Independent versioning per package
+- **Dependency Resolution**: NPM handles complex dependencies
+
+#### For Development
+- **Modular Testing**: Test each package independently
+- **Incremental Updates**: Update adapters without touching core
+- **Community Contributions**: External developers can create new adapters
+- **Clear APIs**: Published TypeScript definitions
+
+#### For Distribution
+- **Discoverability**: NPM search and package registry
+- **Documentation**: Automatic README rendering on NPM
+- **Usage Analytics**: Download statistics and adoption metrics
+- **Community**: Issues, discussions, and contributions via GitHub
+
+This package-based approach transforms the feature from a CCManager-specific implementation into a **reusable ecosystem** that can become the standard for CLI remote communication across the developer community.

@@ -25,9 +25,9 @@ This document provides a precise, development-ready implementation plan with spe
    - Action: Install ngrok, get public URL
    - Output: `WEBHOOK_URL` for testing
 
-4. **Remote-Control Namespace Setup** (30 minutes)
+4. **Monorepo Structure Setup** (30 minutes)
    - Person: Lead Developer
-   - Action: Create remote-control folder structure in CCManager
+   - Action: Create monorepo structure for NPM packages
    - Output: Ready development environment
 
 **🚨 NO DEVELOPMENT CAN START UNTIL ALL 4 ITEMS COMPLETE**
@@ -48,7 +48,7 @@ This document provides a precise, development-ready implementation plan with spe
 
 **Files to create in single PR:**
 ```
-remote-control/core/
+packages/core/
 ├── src/interfaces/
 │   ├── index.ts             # Re-export all interfaces  
 │   ├── channel.ts           # CommunicationChannel interface
@@ -78,7 +78,7 @@ remote-control/core/
 
 **Files to create:**
 ```
-remote-control/core/src/
+packages/core/src/
 ├── core/
 │   ├── configManager.ts     # Hierarchical configuration management
 │   ├── validation.ts        # JSON Schema validation
@@ -107,7 +107,7 @@ remote-control/core/src/
 
 **Files to create:**
 ```
-remote-control/core/src/core/
+packages/core/src/core/
 ├── messageRouter.ts         # Channel-agnostic message routing
 ├── contextBuilder.ts        # Message context creation
 ├── messageQueue.ts          # Async message processing with retry
@@ -128,7 +128,7 @@ remote-control/core/src/core/
 
 **Files to create:**
 ```
-remote-control/core/src/core/
+packages/core/src/core/
 ├── orchestrator.ts          # Main communication coordinator
 ├── pluginManager.ts         # Plugin loading and management
 ├── channelFactory.ts        # Channel creation and lifecycle
@@ -149,7 +149,7 @@ remote-control/core/src/core/
 
 **Files to create:**
 ```
-remote-control/core/src/
+packages/core/src/
 ├── utils/
 │   ├── baseAdapter.ts       # Base class for adapter development
 │   ├── messageFormatter.ts  # Generic message formatting utilities
@@ -181,7 +181,7 @@ remote-control/core/src/
 
 **Files to create:**
 ```
-remote-control/adapters/telegram/
+packages/telegram-adapter/
 ├── src/
 │   ├── index.ts             # Plugin registration and exports
 │   ├── telegramAdapter.ts   # Main adapter implementation
@@ -207,7 +207,7 @@ remote-control/adapters/telegram/
 
 **Files to create:**
 ```
-remote-control/adapters/telegram/src/
+packages/telegram-adapter/src/
 ├── telegramBot.ts           # Telegraf bot wrapper
 ├── messageFormatter.ts      # Telegram-specific formatting
 ├── rateLimiter.ts          # API rate limiting
@@ -230,7 +230,7 @@ remote-control/adapters/telegram/src/
 
 **Files to create:**
 ```
-remote-control/adapters/telegram/src/
+packages/telegram-adapter/src/
 ├── webhookHandler.ts        # Webhook setup and message receiving
 ├── messageParser.ts         # Parse incoming Telegram messages
 ├── eventHandler.ts          # Handle different Telegram events
@@ -252,7 +252,7 @@ remote-control/adapters/telegram/src/
 
 **Files to create:**
 ```
-remote-control/adapters/telegram/
+packages/telegram-adapter/
 ├── src/integration.ts       # Integration helper utilities
 └── __tests__/
     ├── integration/
@@ -284,7 +284,7 @@ remote-control/adapters/telegram/
 
 **Files to create:**
 ```
-remote-control/adapters/voice-synthesis/
+packages/voice-synthesis/
 ├── src/
 │   ├── index.ts             # Main exports
 │   ├── voiceSynthesizer.ts  # Main TTS interface
@@ -304,7 +304,7 @@ remote-control/adapters/voice-synthesis/
 
 **Files to create:**
 ```
-remote-control/adapters/voice-synthesis/src/providers/
+packages/voice-synthesis/src/providers/
 ├── openaiTTS.ts             # OpenAI TTS implementation
 ├── azureTTS.ts              # Azure TTS implementation (basic)
 ├── awsPolly.ts              # AWS Polly implementation (basic)
@@ -320,7 +320,7 @@ remote-control/adapters/voice-synthesis/src/providers/
 
 **Files to create:**
 ```
-remote-control/adapters/voice-synthesis/src/
+packages/voice-synthesis/src/
 ├── audioProcessor.ts        # Audio format conversion
 ├── encoders/
 │   ├── oggEncoder.ts        # OGG/Opus for Telegram
@@ -338,7 +338,7 @@ remote-control/adapters/voice-synthesis/src/
 
 **Files to modify and create:**
 ```
-remote-control/adapters/telegram/src/
+packages/telegram-adapter/src/
 ├── telegramAdapter.ts       # Add voice message support
 ├── voiceMessageHandler.ts   # Voice-specific message handling
 └── __tests__/
@@ -360,7 +360,7 @@ remote-control/adapters/telegram/src/
 
 **Files to create:**
 ```
-remote-control/integration/ccmanager/
+packages/ccmanager-integration/
 ├── src/
 │   ├── index.ts                 # Main exports and setup function
 │   ├── ccmanagerIntegration.ts  # HostApplicationIntegration impl
@@ -378,7 +378,7 @@ remote-control/integration/ccmanager/
 
 **Files to create:**
 ```
-remote-control/integration/ui/
+packages/ccmanager-ui/
 ├── src/components/
 │   ├── CommunicationConfig.tsx     # Main configuration UI
 │   ├── ChannelSetup.tsx           # Channel setup forms
