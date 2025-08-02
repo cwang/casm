@@ -75,6 +75,14 @@ const Session: React.FC<SessionProps> = ({
 			};
 		}
 
+		// Auto-enable autopilot if enabled globally and LLM is available
+		if (autopilotConfig.enabled && autopilotMonitor.isLLMAvailable() && !session.autopilotState.isActive) {
+			autopilotMonitor.enable(session);
+			if (stdout) {
+				stdout.write('\n✈️ Auto-pilot: ACTIVE (globally enabled)\n');
+			}
+		}
+
 		// Update initial state
 		setAutopilotStatus(session.autopilotState.isActive ? 'ACTIVE' : 'STANDBY');
 		setGuidancesProvided(session.autopilotState.guidancesProvided);
@@ -167,12 +175,16 @@ const Session: React.FC<SessionProps> = ({
 				if (monitor.isLLMAvailable()) {
 					const isActive = monitor.toggle(session);
 					const status = isActive ? 'ACTIVE' : 'STANDBY';
-					const message = `✈️ Auto-pilot: ${status}\n`;
-					session.process.write(message);
+					setAutopilotStatus(status);
+					// Display status message in terminal (not sent to Claude Code)
+					if (stdout) {
+						stdout.write(`\n✈️ Auto-pilot: ${status}\n`);
+					}
 				} else {
-					// Show message that OpenAI API key is needed
-					const message = '✈️ Auto-pilot: OPENAI_API_KEY required\n';
-					session.process.write(message);
+					// Show message that API key is needed
+					if (stdout) {
+						stdout.write('\n✈️ Auto-pilot: API key required (configure in settings)\n');
+					}
 				}
 				return;
 			}
