@@ -322,6 +322,10 @@ describe('Menu component rendering', () => {
 	it('should display autopilot toggle option in menu when not in search mode', async () => {
 		const onSelectWorktree = vi.fn();
 
+		// Ensure API keys are available for this test
+		const {LLMClient} = await import('../services/llmClient.js');
+		vi.mocked(LLMClient.hasAnyProviderKeys).mockReturnValue(true);
+
 		const {lastFrame} = render(
 			<Menu
 				sessionManager={sessionManager}
@@ -334,13 +338,17 @@ describe('Menu component rendering', () => {
 
 		const output = lastFrame();
 
-		// Check that autopilot toggle appears in menu
-		expect(output).toContain('P ✈️  Autopilot: OFF');
+		// Check that autopilot toggle appears in menu (with ASCII icon)
+		expect(output).toContain('P ⚡ Autopilot: OFF');
 		expect(output).toContain('P-Autopilot');
 	});
 
 	it('should display autopilot as ON when enabled in configuration', async () => {
 		const onSelectWorktree = vi.fn();
+
+		// Ensure API keys are available for this test
+		const {LLMClient} = await import('../services/llmClient.js');
+		vi.mocked(LLMClient.hasAnyProviderKeys).mockReturnValue(true);
 
 		// Mock autopilot as enabled
 		const {configurationManager} = await import(
@@ -366,8 +374,34 @@ describe('Menu component rendering', () => {
 
 		const output = lastFrame();
 
-		// Check that autopilot toggle shows ON
-		expect(output).toContain('P ✈️  Autopilot: ON');
+		// Check that autopilot toggle shows ON (with ASCII icon)
+		expect(output).toContain('P ⚡ Autopilot: ON');
+	});
+
+	it('should display autopilot as DISABLED when no API keys are available', async () => {
+		const onSelectWorktree = vi.fn();
+
+		// Mock no API keys available
+		const {LLMClient} = await import('../services/llmClient.js');
+		vi.mocked(LLMClient.hasAnyProviderKeys).mockReturnValue(false);
+		vi.mocked(LLMClient.getAvailableProviderKeys).mockReturnValue([]);
+
+		const {lastFrame} = render(
+			<Menu
+				sessionManager={sessionManager}
+				worktreeService={worktreeService}
+				onSelectWorktree={onSelectWorktree}
+			/>,
+		);
+
+		await new Promise(resolve => setTimeout(resolve, 100));
+
+		const output = lastFrame();
+
+		// Check that autopilot toggle shows DISABLED
+		expect(output).toContain('P ⚡ Autopilot: DISABLED');
+		// Check status line also shows DISABLED
+		expect(output).toContain('Autopilot: ⚡ DISABLED');
 	});
 
 	it('should toggle autopilot configuration when called directly', async () => {

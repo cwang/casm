@@ -21,6 +21,7 @@ import TextInputWrapper from './TextInputWrapper.js';
 import {useSearchMode} from '../hooks/useSearchMode.js';
 import {globalSessionOrchestrator} from '../services/globalSessionOrchestrator.js';
 import {configurationManager} from '../services/configurationManager.js';
+import {LLMClient} from '../services/llmClient.js';
 
 interface MenuProps {
 	sessionManager: SessionManager;
@@ -85,6 +86,7 @@ const Menu: React.FC<MenuProps> = ({
 	const [items, setItems] = useState<MenuItem[]>([]);
 	const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
 	const [autopilotEnabled, setAutopilotEnabled] = useState<boolean>(false);
+	const [hasApiKeys, setHasApiKeys] = useState<boolean>(false);
 
 	// Use the search mode hook
 	const {isSearchMode, searchQuery, selectedIndex, setSearchQuery} =
@@ -112,6 +114,9 @@ const Menu: React.FC<MenuProps> = ({
 		// Load autopilot configuration
 		const autopilotConfig = configurationManager.getAutopilotConfig();
 		setAutopilotEnabled(autopilotConfig?.enabled || false);
+
+		// Check API key availability
+		setHasApiKeys(LLMClient.hasAnyProviderKeys());
 
 		// Update sessions
 		const updateSessions = () => {
@@ -249,7 +254,7 @@ const Menu: React.FC<MenuProps> = ({
 				},
 				{
 					type: 'common',
-					label: `P ✈️  Autopilot: ${autopilotEnabled ? 'ON' : 'OFF'}`,
+					label: `P ${MENU_ICONS.AUTOPILOT} Autopilot: ${!hasApiKeys ? 'DISABLED' : autopilotEnabled ? 'ON' : 'OFF'}`,
 					value: 'toggle-autopilot',
 				},
 				{
@@ -286,6 +291,7 @@ const Menu: React.FC<MenuProps> = ({
 		searchQuery,
 		isSearchMode,
 		autopilotEnabled,
+		hasApiKeys,
 	]);
 
 	// Handle hotkeys
@@ -364,7 +370,8 @@ const Menu: React.FC<MenuProps> = ({
 				});
 				break;
 			case 'p': {
-				// Toggle autopilot
+				// Toggle autopilot (only if API keys are available)
+				if (!hasApiKeys) return;
 				const currentConfig = configurationManager.getAutopilotConfig();
 				if (!currentConfig) return;
 				const newConfig = {...currentConfig, enabled: !currentConfig.enabled};
@@ -446,7 +453,8 @@ const Menu: React.FC<MenuProps> = ({
 				hasSession: false,
 			});
 		} else if (item.value === 'toggle-autopilot') {
-			// Toggle autopilot
+			// Toggle autopilot (only if API keys are available)
+			if (!hasApiKeys) return;
 			const currentConfig = configurationManager.getAutopilotConfig();
 			if (!currentConfig) return;
 			const newConfig = {...currentConfig, enabled: !currentConfig.enabled};
@@ -555,8 +563,8 @@ const Menu: React.FC<MenuProps> = ({
 				<Text dimColor>
 					Status: {STATUS_ICONS.BUSY} {STATUS_LABELS.BUSY}{' '}
 					{STATUS_ICONS.WAITING} {STATUS_LABELS.WAITING} {STATUS_ICONS.IDLE}{' '}
-					{STATUS_LABELS.IDLE} | Autopilot:{' '}
-					{autopilotEnabled ? '✈️ ON' : '✈️ OFF'}
+					{STATUS_LABELS.IDLE} | Autopilot: {MENU_ICONS.AUTOPILOT}{' '}
+					{!hasApiKeys ? 'DISABLED' : autopilotEnabled ? 'ON' : 'OFF'}
 				</Text>
 				<Text dimColor>
 					{isSearchMode

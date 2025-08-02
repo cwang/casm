@@ -51,18 +51,23 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 	const menuItems: MenuItem[] = [
 		{
 			label: hasAnyKeys
-				? `E ✈️  Enable Autopilot: ${config?.enabled ? 'ON' : 'OFF'}`
-				: `E ✈️  Enable Autopilot: DISABLED (No API keys)`,
+				? `E 🤖 Enable Autopilot: ${config?.enabled ? 'ON' : 'OFF'}`
+				: `E 🤖 Enable Autopilot: DISABLED (No API keys)`,
 			value: hasAnyKeys ? 'toggle-enabled' : 'disabled-no-keys',
 		},
-		{
-			label: `P 🤖  Provider: ${config?.provider || 'openai'}`,
-			value: hasAnyKeys ? 'provider' : 'disabled-no-keys',
-		},
-		{
-			label: `M 🧠  Model: ${config?.model || 'gpt-4.1'}`,
-			value: hasAnyKeys ? 'model' : 'disabled-no-keys',
-		},
+		// Only show provider and model options if API keys are available
+		...(hasAnyKeys
+			? [
+					{
+						label: `P 🤖 Provider: ${config?.provider || 'openai'}`,
+						value: 'provider',
+					},
+					{
+						label: `M 🧠 Model: ${config?.model || 'gpt-4.1'}`,
+						value: 'model',
+					},
+				]
+			: []),
 		{
 			label: 'B ← Back to Configuration',
 			value: 'back',
@@ -216,6 +221,8 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 
 	if (view === 'model') {
 		const modelItems = getModelItems(config.provider);
+		const providerAvailable = availableProviders.includes(config.provider);
+
 		return (
 			<Box flexDirection="column">
 				<Box marginBottom={1}>
@@ -224,6 +231,20 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 						{config.provider === 'openai' ? 'OpenAI' : 'Anthropic'}
 					</Text>
 				</Box>
+
+				{!providerAvailable && (
+					<Box marginBottom={1}>
+						<Text color="red">
+							⚠️ {config.provider === 'openai' ? 'OpenAI' : 'Anthropic'} API key
+							not available. Set{' '}
+							{config.provider === 'openai'
+								? 'OPENAI_API_KEY'
+								: 'ANTHROPIC_API_KEY'}{' '}
+							environment variable.
+						</Text>
+					</Box>
+				)}
+
 				<SelectInput
 					items={modelItems}
 					onSelect={handleSelect}

@@ -144,9 +144,9 @@ describe('ConfigureAutopilot component', () => {
 		const output = lastFrame();
 
 		expect(output).toContain('Configure Autopilot');
-		expect(output).toContain('E ✈️  Enable Autopilot: OFF');
-		expect(output).toContain('P 🤖  Provider: openai');
-		expect(output).toContain('M 🧠  Model: gpt-4.1');
+		expect(output).toContain('E 🤖 Enable Autopilot: OFF');
+		expect(output).toContain('P 🤖 Provider: openai');
+		expect(output).toContain('M 🧠 Model: gpt-4.1');
 		expect(output).toContain('B ← Back to Configuration');
 	});
 
@@ -165,7 +165,7 @@ describe('ConfigureAutopilot component', () => {
 		await new Promise(resolve => setTimeout(resolve, 100));
 
 		const output = lastFrame();
-		expect(output).toContain('E ✈️  Enable Autopilot: ON');
+		expect(output).toContain('E 🤖 Enable Autopilot: ON');
 	});
 
 	it('should toggle autopilot enabled state when toggle option is selected', async () => {
@@ -377,5 +377,85 @@ describe('ConfigureAutopilot component', () => {
 		}
 
 		expect(onComplete).toHaveBeenCalled();
+	});
+
+	it('should hide provider and model options when no API keys are available', async () => {
+		// Mock no API keys available
+		const {LLMClient} = await import('../services/llmClient.js');
+		vi.mocked(LLMClient.hasAnyProviderKeys).mockReturnValue(false);
+		vi.mocked(LLMClient.getAvailableProviderKeys).mockReturnValue([]);
+
+		const onComplete = vi.fn();
+		const {lastFrame} = render(<ConfigureAutopilot onComplete={onComplete} />);
+
+		await new Promise(resolve => setTimeout(resolve, 100));
+
+		const output = lastFrame();
+
+		// Should show disabled state and warning
+		expect(output).toContain('E 🤖 Enable Autopilot: DISABLED (No API keys)');
+		expect(output).toContain('⚠️ No API keys found');
+
+		// Should NOT show provider and model options
+		expect(output).not.toContain('P 🤖 Provider:');
+		expect(output).not.toContain('M 🧠 Model:');
+
+		// Should still show back option
+		expect(output).toContain('B ← Back to Configuration');
+	});
+
+	it('should show only available providers when some API keys are missing', async () => {
+		// Mock only OpenAI API key available
+		const {LLMClient} = await import('../services/llmClient.js');
+		vi.mocked(LLMClient.hasAnyProviderKeys).mockReturnValue(true);
+		vi.mocked(LLMClient.getAvailableProviderKeys).mockReturnValue(['openai']);
+
+		const onComplete = vi.fn();
+		const {lastFrame, rerender} = render(
+			<ConfigureAutopilot onComplete={onComplete} />,
+		);
+
+		await new Promise(resolve => setTimeout(resolve, 100));
+
+		// Navigate to provider selection
+		const onSelect = (global as any).mockSelectInputOnSelect;
+		onSelect({value: 'provider'});
+
+		// Re-render to reflect state change
+		rerender(<ConfigureAutopilot onComplete={onComplete} />);
+
+		await new Promise(resolve => setTimeout(resolve, 100));
+
+		const output = lastFrame();
+
+		// Should show available provider
+		expect(output).toContain('OpenAI');
+
+		// Should show warning for unavailable provider
+		expect(output).toContain('Anthropic: Unavailable (set ANTHROPIC_API_KEY)');
+	});
+
+	it('should prevent toggle when no API keys are available', async () => {
+		// Mock no API keys available
+		const {LLMClient} = await import('../services/llmClient.js');
+		vi.mocked(LLMClient.hasAnyProviderKeys).mockReturnValue(false);
+		vi.mocked(LLMClient.getAvailableProviderKeys).mockReturnValue([]);
+
+		const onComplete = vi.fn();
+		render(<ConfigureAutopilot onComplete={onComplete} />);
+
+		await new Promise(resolve => setTimeout(resolve, 100));
+
+		// Try to select the disabled toggle option
+		const onSelect = (global as any).mockSelectInputOnSelect;
+		onSelect({value: 'disabled-no-keys'});
+
+		// Verify that setAutopilotConfig was NOT called
+		const {configurationManager} = await import(
+			'../services/configurationManager.js'
+		);
+		expect(
+			vi.mocked(configurationManager.setAutopilotConfig),
+		).not.toHaveBeenCalled();
 	});
 });
