@@ -28,19 +28,13 @@ type SupportedProvider = 'openai' | 'anthropic';
 const PROVIDERS: Record<SupportedProvider, ProviderInfo> = {
   openai: {
     name: 'OpenAI',
-    models: ['gpt-4', 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'],
+    models: ['gpt-4.1', 'o4-mini', 'o3'],
     createModel: (model: string) => openai(model),
     requiresKey: 'OPENAI_API_KEY',
   },
   anthropic: {
     name: 'Anthropic', 
-    models: [
-      'claude-3-5-sonnet-20241022',
-      'claude-3-5-haiku-20241022',
-      'claude-3-opus-20240229',
-      'claude-3-sonnet-20240229',
-      'claude-3-haiku-20240307',
-    ],
+    models: ['claude-4-sonnet', 'claude-4-opus'],
     createModel: (model: string) => anthropic(model),
     requiresKey: 'ANTHROPIC_API_KEY',
   },
@@ -122,19 +116,29 @@ interface AutopilotConfig {
   enabled: boolean;
   provider: 'openai' | 'anthropic';  // Easy provider switching
   model: string;                     // Provider-specific model names
-  maxGuidancesPerHour: number;       // Rate limiting
-  analysisDelayMs: number;           // Analysis debouncing
+  maxGuidancesPerHour: number;       // Automatic rate limiting (not user-configurable)
+  analysisDelayMs: number;           // Automatic analysis debouncing (not user-configurable)
 }
 
-// Default configuration
+// Default configuration with sensible built-in limits
 {
   enabled: false,
   provider: 'openai',
-  model: 'gpt-4',
-  maxGuidancesPerHour: 3,
-  analysisDelayMs: 3000,
+  model: 'gpt-4.1',
+  maxGuidancesPerHour: 3,    // Automatic: prevents overuse
+  analysisDelayMs: 3000,     // Automatic: waits for stable output
 }
 ```
+
+### User-Configurable Settings
+
+The autopilot UI exposes only the essential user decisions:
+
+1. **Enable/Disable** - Master on/off switch
+2. **Provider** - Choose between OpenAI and Anthropic  
+3. **Model** - Select specific model within chosen provider
+
+Rate limiting and analysis delay use sensible defaults automatically to provide a smooth experience without overwhelming users with technical configuration.
 
 ## Integration Points
 
@@ -170,7 +174,7 @@ getAutopilotConfig(): AutopilotConfig {
   return this.config.autopilot || {
     enabled: false,
     provider: 'openai',
-    model: 'gpt-4',
+    model: 'gpt-4.1',
     maxGuidancesPerHour: 3,
     analysisDelayMs: 3000,
   };
@@ -205,9 +209,9 @@ npx ccmanager
 const newConfig: AutopilotConfig = {
   enabled: true,
   provider: 'anthropic',  // Switch from OpenAI to Anthropic
-  model: 'claude-3-5-sonnet-20241022',
-  maxGuidancesPerHour: 5,
-  analysisDelayMs: 2000,
+  model: 'claude-4-sonnet',
+  maxGuidancesPerHour: 3,  // Automatic defaults
+  analysisDelayMs: 3000,   // Automatic defaults
 };
 
 autopilotMonitor.updateConfig(newConfig);

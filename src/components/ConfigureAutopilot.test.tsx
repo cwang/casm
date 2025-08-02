@@ -127,8 +127,6 @@ describe('ConfigureAutopilot component', () => {
 		expect(output).toContain('E ✈️  Enable Autopilot: OFF');
 		expect(output).toContain('P 🤖  Provider: openai');
 		expect(output).toContain('M 🧠  Model: gpt-4.1');
-		expect(output).toContain('R ⏱️   Rate Limit: 3/hour');
-		expect(output).toContain('D ⏰  Analysis Delay: 3000ms');
 		expect(output).toContain('B ← Back to Configuration');
 	});
 
@@ -287,54 +285,6 @@ describe('ConfigureAutopilot component', () => {
 		expect(output).toContain('Select Model for Anthropic');
 		expect(output).toContain('claude-4-sonnet');
 		expect(output).toContain('claude-4-opus');
-	});
-
-	it('should navigate to rate limit input when rate limit option is selected', async () => {
-		const onComplete = vi.fn();
-
-		const {lastFrame, rerender} = render(
-			<ConfigureAutopilot onComplete={onComplete} />,
-		);
-
-		await new Promise(resolve => setTimeout(resolve, 100));
-
-		// Navigate to rate limit input
-		const onSelect = (global as any).mockSelectInputOnSelect;
-		onSelect({value: 'rate-limit'});
-
-		// Re-render to reflect state change
-		rerender(<ConfigureAutopilot onComplete={onComplete} />);
-
-		await new Promise(resolve => setTimeout(resolve, 100));
-
-		const output = lastFrame();
-		expect(output).toContain('Set Rate Limit (guidances per hour)');
-		expect(output).toContain('Current: 3/hour');
-		expect(output).toContain('TextInput: 3');
-	});
-
-	it('should navigate to delay input when delay option is selected', async () => {
-		const onComplete = vi.fn();
-
-		const {lastFrame, rerender} = render(
-			<ConfigureAutopilot onComplete={onComplete} />,
-		);
-
-		await new Promise(resolve => setTimeout(resolve, 100));
-
-		// Navigate to delay input
-		const onSelect = (global as any).mockSelectInputOnSelect;
-		onSelect({value: 'delay'});
-
-		// Re-render to reflect state change
-		rerender(<ConfigureAutopilot onComplete={onComplete} />);
-
-		await new Promise(resolve => setTimeout(resolve, 100));
-
-		const output = lastFrame();
-		expect(output).toContain('Set Analysis Delay (milliseconds)');
-		expect(output).toContain('Current: 3000ms');
-		expect(output).toContain('TextInput: 3000');
 	});
 
 	it('should call onComplete when back is selected from main menu', async () => {

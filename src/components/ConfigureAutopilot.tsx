@@ -1,7 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {Box, Text, useInput} from 'ink';
 import SelectInput from 'ink-select-input';
-import TextInput from 'ink-text-input';
 import {AutopilotConfig} from '../types/index.js';
 import {configurationManager} from '../services/configurationManager.js';
 
@@ -9,7 +8,7 @@ interface ConfigureAutopilotProps {
 	onComplete: () => void;
 }
 
-type ConfigView = 'menu' | 'provider' | 'model' | 'rate-limit' | 'delay';
+type ConfigView = 'menu' | 'provider' | 'model';
 
 interface MenuItem {
 	label: string;
@@ -21,7 +20,6 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 }) => {
 	const [view, setView] = useState<ConfigView>('menu');
 	const [config, setConfig] = useState<AutopilotConfig | null>(null);
-	const [inputValue, setInputValue] = useState<string>('');
 
 	useEffect(() => {
 		const currentConfig = configurationManager.getAutopilotConfig();
@@ -43,16 +41,8 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 			value: 'provider',
 		},
 		{
-			label: `M 🧠  Model: ${config?.model || 'gpt-4'}`,
+			label: `M 🧠  Model: ${config?.model || 'gpt-4.1'}`,
 			value: 'model',
-		},
-		{
-			label: `R ⏱️   Rate Limit: ${config?.maxGuidancesPerHour || 3}/hour`,
-			value: 'rate-limit',
-		},
-		{
-			label: `D ⏰  Analysis Delay: ${config?.analysisDelayMs || 3000}ms`,
-			value: 'delay',
 		},
 		{
 			label: 'B ← Back to Configuration',
@@ -104,12 +94,6 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 			setView('provider');
 		} else if (item.value === 'model') {
 			setView('model');
-		} else if (item.value === 'rate-limit') {
-			setInputValue(config.maxGuidancesPerHour.toString());
-			setView('rate-limit');
-		} else if (item.value === 'delay') {
-			setInputValue(config.analysisDelayMs.toString());
-			setView('delay');
 		} else if (view === 'provider') {
 			if (item.value === 'openai' || item.value === 'anthropic') {
 				const defaultModel =
@@ -125,25 +109,6 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 			saveConfig({...config, model: item.value});
 			setView('menu');
 		}
-	};
-
-	const handleInputSubmit = () => {
-		if (!config) return;
-
-		const numValue = parseInt(inputValue);
-		if (isNaN(numValue) || numValue < 0) {
-			setView('menu');
-			return;
-		}
-
-		if (view === 'rate-limit') {
-			saveConfig({...config, maxGuidancesPerHour: Math.max(1, numValue)});
-		} else if (view === 'delay') {
-			saveConfig({...config, analysisDelayMs: Math.max(1000, numValue)});
-		}
-
-		setView('menu');
-		setInputValue('');
 	};
 
 	// Handle hotkeys (only when in menu view)
@@ -163,18 +128,6 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 				break;
 			case 'm':
 				setView('model');
-				break;
-			case 'r':
-				if (config) {
-					setInputValue(config.maxGuidancesPerHour.toString());
-					setView('rate-limit');
-				}
-				break;
-			case 'd':
-				if (config) {
-					setInputValue(config.analysisDelayMs.toString());
-					setView('delay');
-				}
 				break;
 			case 'b':
 				onComplete();
@@ -229,62 +182,6 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 					isFocused={true}
 					initialIndex={getModelInitialIndex()}
 				/>
-			</Box>
-		);
-	}
-
-	if (view === 'rate-limit') {
-		return (
-			<Box flexDirection="column">
-				<Box marginBottom={1}>
-					<Text bold color="green">
-						Set Rate Limit (guidances per hour)
-					</Text>
-				</Box>
-				<Box marginBottom={1}>
-					<Text dimColor>Current: {config.maxGuidancesPerHour}/hour</Text>
-				</Box>
-				<Box>
-					<Text>Rate limit: </Text>
-					<TextInput
-						value={inputValue}
-						onChange={setInputValue}
-						onSubmit={handleInputSubmit}
-						focus={true}
-						placeholder="Enter number (minimum 1)"
-					/>
-				</Box>
-				<Box marginTop={1}>
-					<Text dimColor>Press Enter to save, Escape to cancel</Text>
-				</Box>
-			</Box>
-		);
-	}
-
-	if (view === 'delay') {
-		return (
-			<Box flexDirection="column">
-				<Box marginBottom={1}>
-					<Text bold color="green">
-						Set Analysis Delay (milliseconds)
-					</Text>
-				</Box>
-				<Box marginBottom={1}>
-					<Text dimColor>Current: {config.analysisDelayMs}ms</Text>
-				</Box>
-				<Box>
-					<Text>Delay: </Text>
-					<TextInput
-						value={inputValue}
-						onChange={setInputValue}
-						onSubmit={handleInputSubmit}
-						focus={true}
-						placeholder="Enter delay in ms (minimum 1000)"
-					/>
-				</Box>
-				<Box marginTop={1}>
-					<Text dimColor>Press Enter to save, Escape to cancel</Text>
-				</Box>
 			</Box>
 		);
 	}
