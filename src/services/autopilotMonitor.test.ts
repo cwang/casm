@@ -9,7 +9,7 @@ vi.mock('./llmClient.js', () => ({
 		isAvailable: vi.fn().mockReturnValue(true),
 		updateConfig: vi.fn(),
 		getCurrentProviderName: vi.fn().mockReturnValue('OpenAI'),
-		getSupportedModels: vi.fn().mockReturnValue(['gpt-4', 'gpt-3.5-turbo']),
+		getSupportedModels: vi.fn().mockReturnValue(['gpt-4.1', 'o4-mini', 'o3']),
 		analyzeClaudeOutput: vi.fn().mockResolvedValue({
 			shouldIntervene: false,
 			confidence: 0.3,
@@ -32,7 +32,7 @@ describe('AutopilotMonitor', () => {
 		config = {
 			enabled: true,
 			provider: 'openai',
-			model: 'gpt-4',
+			model: 'gpt-4.1',
 			maxGuidancesPerHour: 3,
 			analysisDelayMs: 1000,
 		};

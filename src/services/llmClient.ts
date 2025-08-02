@@ -15,19 +15,13 @@ interface ProviderInfo {
 const PROVIDERS: Record<SupportedProvider, ProviderInfo> = {
 	openai: {
 		name: 'OpenAI',
-		models: ['gpt-4', 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'],
+		models: ['gpt-4.1', 'o4-mini', 'o3'],
 		createModel: (model: string) => openai(model),
 		requiresKey: 'OPENAI_API_KEY',
 	},
 	anthropic: {
 		name: 'Anthropic',
-		models: [
-			'claude-3-5-sonnet-20241022',
-			'claude-3-5-haiku-20241022',
-			'claude-3-opus-20240229',
-			'claude-3-sonnet-20240229',
-			'claude-3-haiku-20240307',
-		],
+		models: ['claude-4-sonnet', 'claude-4-opus'],
 		createModel: (model: string) => anthropic(model),
 		requiresKey: 'ANTHROPIC_API_KEY',
 	},

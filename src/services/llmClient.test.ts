@@ -30,7 +30,7 @@ describe('LLMClient', () => {
 		mockConfig = {
 			enabled: true,
 			provider: 'openai',
-			model: 'gpt-4',
+			model: 'gpt-4.1',
 			maxGuidancesPerHour: 3,
 			analysisDelayMs: 3000,
 		};
@@ -66,17 +66,17 @@ describe('LLMClient', () => {
 
 		it('should return supported models for OpenAI', () => {
 			const models = llmClient.getSupportedModels();
-			expect(models).toContain('gpt-4');
-			expect(models).toContain('gpt-4o');
-			expect(models).toContain('gpt-3.5-turbo');
+			expect(models).toContain('gpt-4.1');
+			expect(models).toContain('o4-mini');
+			expect(models).toContain('o3');
 		});
 
 		it('should return supported models for Anthropic', () => {
 			const anthropicConfig = {...mockConfig, provider: 'anthropic' as const};
 			const anthropicClient = new LLMClient(anthropicConfig);
 			const models = anthropicClient.getSupportedModels();
-			expect(models).toContain('claude-3-5-sonnet-20241022');
-			expect(models).toContain('claude-3-5-haiku-20241022');
+			expect(models).toContain('claude-4-sonnet');
+			expect(models).toContain('claude-4-opus');
 		});
 
 		it('should return available providers', () => {
@@ -208,7 +208,7 @@ describe('LLMClient', () => {
 			expect(modelsByProvider).toHaveLength(2);
 			expect(modelsByProvider[0]).toMatchObject({
 				provider: 'OpenAI',
-				models: expect.arrayContaining(['gpt-4']),
+				models: expect.arrayContaining(['gpt-4.1']),
 			});
 		});
 	});

@@ -62,20 +62,31 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 
 	const providerItems: MenuItem[] = [
 		{label: 'OpenAI', value: 'openai'},
-		{label: 'Anthropic (Claude)', value: 'anthropic'},
+		{label: 'Anthropic', value: 'anthropic'},
 		{label: '← Back', value: 'back'},
 	];
 
 	const getModelItems = (provider: string): MenuItem[] => {
 		const models =
 			provider === 'openai'
-				? ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo']
-				: ['claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307'];
+				? ['gpt-4.1', 'o4-mini', 'o3']
+				: ['claude-4-sonnet', 'claude-4-opus'];
 
 		return [
 			...models.map(model => ({label: model, value: model})),
 			{label: '← Back', value: 'back'},
 		];
+	};
+
+	const getProviderInitialIndex = (): number => {
+		if (!config) return 0;
+		return providerItems.findIndex(item => item.value === config.provider);
+	};
+
+	const getModelInitialIndex = (): number => {
+		if (!config) return 0;
+		const modelItems = getModelItems(config.provider);
+		return modelItems.findIndex(item => item.value === config.model);
 	};
 
 	const handleSelect = (item: MenuItem) => {
@@ -102,7 +113,7 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 		} else if (view === 'provider') {
 			if (item.value === 'openai' || item.value === 'anthropic') {
 				const defaultModel =
-					item.value === 'openai' ? 'gpt-4' : 'claude-3-5-sonnet-20241022';
+					item.value === 'openai' ? 'gpt-4.1' : 'claude-4-sonnet';
 				saveConfig({
 					...config,
 					provider: item.value as 'openai' | 'anthropic',
@@ -196,6 +207,7 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 					items={providerItems}
 					onSelect={handleSelect}
 					isFocused={true}
+					initialIndex={getProviderInitialIndex()}
 				/>
 			</Box>
 		);
@@ -215,6 +227,7 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 					items={modelItems}
 					onSelect={handleSelect}
 					isFocused={true}
+					initialIndex={getModelInitialIndex()}
 				/>
 			</Box>
 		);

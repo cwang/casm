@@ -79,7 +79,7 @@ describe('ConfigureAutopilot component', () => {
 	const defaultConfig = {
 		enabled: false,
 		provider: 'openai' as const,
-		model: 'gpt-4',
+		model: 'gpt-4.1',
 		maxGuidancesPerHour: 3,
 		analysisDelayMs: 3000,
 	};
@@ -126,7 +126,7 @@ describe('ConfigureAutopilot component', () => {
 		expect(output).toContain('Configure Autopilot');
 		expect(output).toContain('E ✈️  Enable Autopilot: OFF');
 		expect(output).toContain('P 🤖  Provider: openai');
-		expect(output).toContain('M 🧠  Model: gpt-4');
+		expect(output).toContain('M 🧠  Model: gpt-4.1');
 		expect(output).toContain('R ⏱️   Rate Limit: 3/hour');
 		expect(output).toContain('D ⏰  Analysis Delay: 3000ms');
 		expect(output).toContain('B ← Back to Configuration');
@@ -197,7 +197,7 @@ describe('ConfigureAutopilot component', () => {
 		const output = lastFrame();
 		expect(output).toContain('Select LLM Provider');
 		expect(output).toContain('OpenAI');
-		expect(output).toContain('Anthropic (Claude)');
+		expect(output).toContain('Anthropic');
 	});
 
 	it('should change provider when a provider is selected', async () => {
@@ -227,7 +227,7 @@ describe('ConfigureAutopilot component', () => {
 		).toHaveBeenCalledWith({
 			...defaultConfig,
 			provider: 'anthropic',
-			model: 'claude-3-5-sonnet-20241022',
+			model: 'claude-4-sonnet',
 		});
 	});
 
@@ -251,9 +251,9 @@ describe('ConfigureAutopilot component', () => {
 
 		const output = lastFrame();
 		expect(output).toContain('Select Model for OpenAI');
-		expect(output).toContain('gpt-4');
-		expect(output).toContain('gpt-4-turbo');
-		expect(output).toContain('gpt-3.5-turbo');
+		expect(output).toContain('gpt-4.1');
+		expect(output).toContain('o4-mini');
+		expect(output).toContain('o3');
 	});
 
 	it('should show correct models for Anthropic provider', async () => {
@@ -263,7 +263,7 @@ describe('ConfigureAutopilot component', () => {
 		vi.mocked(configurationManager.getAutopilotConfig).mockReturnValue({
 			...defaultConfig,
 			provider: 'anthropic',
-			model: 'claude-3-5-sonnet-20241022',
+			model: 'claude-4-sonnet',
 		});
 
 		const onComplete = vi.fn();
@@ -285,8 +285,8 @@ describe('ConfigureAutopilot component', () => {
 
 		const output = lastFrame();
 		expect(output).toContain('Select Model for Anthropic');
-		expect(output).toContain('claude-3-5-sonnet-20241022');
-		expect(output).toContain('claude-3-haiku-20240307');
+		expect(output).toContain('claude-4-sonnet');
+		expect(output).toContain('claude-4-opus');
 	});
 
 	it('should navigate to rate limit input when rate limit option is selected', async () => {

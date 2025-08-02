@@ -76,7 +76,7 @@ vi.mock('../services/configurationManager.js', () => ({
 		getAutopilotConfig: vi.fn().mockReturnValue({
 			enabled: false,
 			provider: 'openai',
-			model: 'gpt-4',
+			model: 'gpt-4.1',
 			maxGuidancesPerHour: 3,
 			analysisDelayMs: 3000,
 		}),
@@ -341,7 +341,7 @@ describe('Menu component rendering', () => {
 		vi.mocked(configurationManager.getAutopilotConfig).mockReturnValue({
 			enabled: true,
 			provider: 'openai',
-			model: 'gpt-4',
+			model: 'gpt-4.1',
 			maxGuidancesPerHour: 3,
 			analysisDelayMs: 3000,
 		});
@@ -399,7 +399,7 @@ describe('Menu component rendering', () => {
 		expect(mockSetAutopilotConfig).toHaveBeenCalledWith({
 			enabled: true,
 			provider: 'openai',
-			model: 'gpt-4',
+			model: 'gpt-4.1',
 			maxGuidancesPerHour: 3,
 			analysisDelayMs: 3000,
 		});
