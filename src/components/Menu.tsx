@@ -111,7 +111,7 @@ const Menu: React.FC<MenuProps> = ({
 
 		// Load autopilot configuration
 		const autopilotConfig = configurationManager.getAutopilotConfig();
-		setAutopilotEnabled(autopilotConfig.enabled);
+		setAutopilotEnabled(autopilotConfig?.enabled || false);
 
 		// Update sessions
 		const updateSessions = () => {
@@ -366,6 +366,7 @@ const Menu: React.FC<MenuProps> = ({
 			case 'p': {
 				// Toggle autopilot
 				const currentConfig = configurationManager.getAutopilotConfig();
+				if (!currentConfig) return;
 				const newConfig = {...currentConfig, enabled: !currentConfig.enabled};
 				configurationManager.setAutopilotConfig(newConfig);
 				setAutopilotEnabled(newConfig.enabled);
@@ -447,6 +448,7 @@ const Menu: React.FC<MenuProps> = ({
 		} else if (item.value === 'toggle-autopilot') {
 			// Toggle autopilot
 			const currentConfig = configurationManager.getAutopilotConfig();
+			if (!currentConfig) return;
 			const newConfig = {...currentConfig, enabled: !currentConfig.enabled};
 			configurationManager.setAutopilotConfig(newConfig);
 			setAutopilotEnabled(newConfig.enabled);

@@ -75,6 +75,15 @@ vi.mock('../services/configurationManager.js', () => ({
 	},
 }));
 
+// Mock LLMClient
+vi.mock('../services/llmClient.js', () => ({
+	LLMClient: {
+		hasAnyProviderKeys: vi.fn(),
+		getAvailableProviderKeys: vi.fn(),
+		isProviderAvailable: vi.fn(),
+	},
+}));
+
 describe('ConfigureAutopilot component', () => {
 	const defaultConfig = {
 		enabled: false,
@@ -89,9 +98,20 @@ describe('ConfigureAutopilot component', () => {
 		const {configurationManager} = await import(
 			'../services/configurationManager.js'
 		);
+		const {LLMClient} = await import('../services/llmClient.js');
+
 		vi.mocked(configurationManager.getAutopilotConfig).mockReturnValue(
 			defaultConfig,
 		);
+
+		// Mock LLMClient methods to simulate API keys available by default
+		vi.mocked(LLMClient.hasAnyProviderKeys).mockReturnValue(true);
+		vi.mocked(LLMClient.getAvailableProviderKeys).mockReturnValue([
+			'openai',
+			'anthropic',
+		]);
+		vi.mocked(LLMClient.isProviderAvailable).mockReturnValue(true);
+
 		// Clear global mocks
 		(global as any).mockSelectInputOnSelect = undefined;
 		(global as any).mockTextInputOnSubmit = undefined;
@@ -304,19 +324,22 @@ describe('ConfigureAutopilot component', () => {
 	it('should handle keyboard shortcuts for main menu', async () => {
 		const onComplete = vi.fn();
 
+		// Create a proper input handler mock
+		let inputHandler: ((input: string, key: any) => void) | undefined;
+		const {useInput} = await import('ink');
+		const mockUseInput = vi.mocked(useInput);
+		mockUseInput.mockImplementation(
+			(handler: (input: string, key: any) => void) => {
+				inputHandler = handler;
+			},
+		);
+
 		render(<ConfigureAutopilot onComplete={onComplete} />);
 
 		await new Promise(resolve => setTimeout(resolve, 100));
 
-		// Mock useInput to simulate keyboard input
-		const {useInput} = await import('ink');
-		const mockUseInput = vi.mocked(useInput);
-
-		// Get the input handler function
-		const inputHandler = mockUseInput.mock.calls[0]?.[0];
-		expect(inputHandler).toBeDefined();
-
 		// Simulate 'e' key press to toggle enabled
+		expect(inputHandler).toBeDefined();
 		if (inputHandler) {
 			inputHandler('e', {} as any);
 		}

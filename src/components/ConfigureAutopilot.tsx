@@ -3,6 +3,7 @@ import {Box, Text, useInput} from 'ink';
 import SelectInput from 'ink-select-input';
 import {AutopilotConfig} from '../types/index.js';
 import {configurationManager} from '../services/configurationManager.js';
+import {LLMClient} from '../services/llmClient.js';
 
 interface ConfigureAutopilotProps {
 	onComplete: () => void;
@@ -20,10 +21,26 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 }) => {
 	const [view, setView] = useState<ConfigView>('menu');
 	const [config, setConfig] = useState<AutopilotConfig | null>(null);
+	const [hasAnyKeys, setHasAnyKeys] = useState<boolean>(false);
+	const [availableProviders, setAvailableProviders] = useState<string[]>([]);
 
 	useEffect(() => {
 		const currentConfig = configurationManager.getAutopilotConfig();
-		setConfig(currentConfig);
+
+		// Check API key availability
+		const hasKeys = LLMClient.hasAnyProviderKeys();
+		const availableKeys = LLMClient.getAvailableProviderKeys();
+		setHasAnyKeys(hasKeys);
+		setAvailableProviders(availableKeys);
+
+		// Force disable autopilot if no API keys are available
+		if (!hasKeys && currentConfig && currentConfig.enabled) {
+			const disabledConfig = {...currentConfig, enabled: false};
+			configurationManager.setAutopilotConfig(disabledConfig);
+			setConfig(disabledConfig);
+		} else {
+			setConfig(currentConfig);
+		}
 	}, []);
 
 	const saveConfig = (newConfig: AutopilotConfig) => {
@@ -33,16 +50,18 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 
 	const menuItems: MenuItem[] = [
 		{
-			label: `E ✈️  Enable Autopilot: ${config?.enabled ? 'ON' : 'OFF'}`,
-			value: 'toggle-enabled',
+			label: hasAnyKeys
+				? `E ✈️  Enable Autopilot: ${config?.enabled ? 'ON' : 'OFF'}`
+				: `E ✈️  Enable Autopilot: DISABLED (No API keys)`,
+			value: hasAnyKeys ? 'toggle-enabled' : 'disabled-no-keys',
 		},
 		{
 			label: `P 🤖  Provider: ${config?.provider || 'openai'}`,
-			value: 'provider',
+			value: hasAnyKeys ? 'provider' : 'disabled-no-keys',
 		},
 		{
 			label: `M 🧠  Model: ${config?.model || 'gpt-4.1'}`,
-			value: 'model',
+			value: hasAnyKeys ? 'model' : 'disabled-no-keys',
 		},
 		{
 			label: 'B ← Back to Configuration',
@@ -51,8 +70,12 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 	];
 
 	const providerItems: MenuItem[] = [
-		{label: 'OpenAI', value: 'openai'},
-		{label: 'Anthropic', value: 'anthropic'},
+		...(availableProviders.includes('openai')
+			? [{label: 'OpenAI', value: 'openai'}]
+			: []),
+		...(availableProviders.includes('anthropic')
+			? [{label: 'Anthropic', value: 'anthropic'}]
+			: []),
 		{label: '← Back', value: 'back'},
 	];
 
@@ -88,6 +111,9 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 			} else {
 				setView('menu');
 			}
+		} else if (item.value === 'disabled-no-keys') {
+			// Do nothing for disabled items
+			return;
 		} else if (item.value === 'toggle-enabled') {
 			saveConfig({...config, enabled: !config.enabled});
 		} else if (item.value === 'provider') {
@@ -119,15 +145,19 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 
 		switch (keyPressed) {
 			case 'e':
-				if (config) {
+				if (config && hasAnyKeys) {
 					saveConfig({...config, enabled: !config.enabled});
 				}
 				break;
 			case 'p':
-				setView('provider');
+				if (hasAnyKeys) {
+					setView('provider');
+				}
 				break;
 			case 'm':
-				setView('model');
+				if (hasAnyKeys) {
+					setView('model');
+				}
 				break;
 			case 'b':
 				onComplete();
@@ -149,6 +179,9 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 	}
 
 	if (view === 'provider') {
+		const openaiAvailable = availableProviders.includes('openai');
+		const anthropicAvailable = availableProviders.includes('anthropic');
+
 		return (
 			<Box flexDirection="column">
 				<Box marginBottom={1}>
@@ -156,6 +189,21 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 						Select LLM Provider
 					</Text>
 				</Box>
+
+				{!openaiAvailable && (
+					<Box marginBottom={1}>
+						<Text color="red">OpenAI: Unavailable (set OPENAI_API_KEY)</Text>
+					</Box>
+				)}
+
+				{!anthropicAvailable && (
+					<Box marginBottom={1}>
+						<Text color="red">
+							Anthropic: Unavailable (set ANTHROPIC_API_KEY)
+						</Text>
+					</Box>
+				)}
+
 				<SelectInput
 					items={providerItems}
 					onSelect={handleSelect}
@@ -199,6 +247,15 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 					Configure AI-powered session monitoring and guidance:
 				</Text>
 			</Box>
+
+			{!hasAnyKeys && (
+				<Box marginBottom={1}>
+					<Text color="red">
+						⚠️ No API keys found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY
+						environment variables to enable Autopilot.
+					</Text>
+				</Box>
+			)}
 
 			<SelectInput
 				items={menuItems}

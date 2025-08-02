@@ -56,6 +56,24 @@ export class LLMClient {
 		return provider?.models ?? [];
 	}
 
+	static isProviderAvailable(provider: SupportedProvider): boolean {
+		const providerInfo = PROVIDERS[provider];
+		if (!providerInfo) return false;
+
+		const apiKey = process.env[providerInfo.requiresKey];
+		return Boolean(apiKey);
+	}
+
+	static getAvailableProviderKeys(): SupportedProvider[] {
+		return Object.keys(PROVIDERS).filter(provider =>
+			LLMClient.isProviderAvailable(provider as SupportedProvider),
+		) as SupportedProvider[];
+	}
+
+	static hasAnyProviderKeys(): boolean {
+		return LLMClient.getAvailableProviderKeys().length > 0;
+	}
+
 	getAvailableProviders(): Array<{
 		name: string;
 		models: string[];
