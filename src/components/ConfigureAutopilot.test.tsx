@@ -589,4 +589,46 @@ describe('ConfigureAutopilot component', () => {
 			},
 		});
 	});
+
+	it('should auto-select provider when only one API key is available', async () => {
+		// Mock config with only OpenAI key and Anthropic provider (mismatch scenario)
+		const {configurationManager} = await import(
+			'../services/configurationManager.js'
+		);
+		const configWithOnlyOpenAI = {
+			...defaultConfig,
+			provider: 'anthropic' as const, // Wrong provider for the available key
+			model: 'claude-4-sonnet',
+			apiKeys: {
+				openai: 'test-openai-key',
+			}, // Only OpenAI key available
+		};
+		vi.mocked(configurationManager.getAutopilotConfig).mockReturnValue(
+			configWithOnlyOpenAI,
+		);
+
+		// Mock LLMClient to reflect only OpenAI is available
+		const {LLMClient} = await import('../services/llmClient.js');
+		vi.mocked(LLMClient.hasAnyProviderKeys).mockReturnValue(true);
+		vi.mocked(LLMClient.getAvailableProviderKeys).mockReturnValue(['openai']);
+		vi.mocked(LLMClient.isProviderAvailable).mockImplementation(
+			(provider, config) => {
+				return provider === 'openai' && Boolean(config?.apiKeys?.openai);
+			},
+		);
+
+		const onComplete = vi.fn();
+		render(<ConfigureAutopilot onComplete={onComplete} />);
+
+		await new Promise(resolve => setTimeout(resolve, 100));
+
+		// Verify that setAutopilotConfig was called to auto-select OpenAI
+		expect(
+			vi.mocked(configurationManager.setAutopilotConfig),
+		).toHaveBeenCalledWith({
+			...configWithOnlyOpenAI,
+			provider: 'openai',
+			model: 'gpt-4.1',
+		});
+	});
 });

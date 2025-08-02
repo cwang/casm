@@ -40,14 +40,35 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 		setHasAnyKeys(hasKeys);
 		setAvailableProviders(availableKeys);
 
+		let configToSave = currentConfig;
+
 		// Force disable autopilot if no API keys are available
 		if (!hasKeys && currentConfig && currentConfig.enabled) {
-			const disabledConfig = {...currentConfig, enabled: false};
-			configurationManager.setAutopilotConfig(disabledConfig);
-			setConfig(disabledConfig);
-		} else {
-			setConfig(currentConfig);
+			configToSave = {...currentConfig, enabled: false};
 		}
+
+		// Auto-select provider if only one API key is available and current provider is not available
+		if (hasKeys && availableKeys.length === 1 && currentConfig) {
+			const availableProvider = availableKeys[0] as 'openai' | 'anthropic';
+			if (
+				!LLMClient.isProviderAvailable(currentConfig.provider, currentConfig)
+			) {
+				const defaultModel =
+					availableProvider === 'openai' ? 'gpt-4.1' : 'claude-4-sonnet';
+				configToSave = {
+					...configToSave,
+					provider: availableProvider,
+					model: defaultModel,
+				};
+			}
+		}
+
+		// Save config if it changed
+		if (configToSave !== currentConfig) {
+			configurationManager.setAutopilotConfig(configToSave);
+		}
+
+		setConfig(configToSave);
 	}, []);
 
 	const saveConfig = (newConfig: AutopilotConfig) => {
@@ -206,7 +227,7 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 	) => {
 		if (!config) return;
 
-		const newConfig = {
+		let newConfig = {
 			...config,
 			apiKeys: {
 				...config.apiKeys,
@@ -214,13 +235,27 @@ const ConfigureAutopilot: React.FC<ConfigureAutopilotProps> = ({
 			},
 		};
 
-		saveConfig(newConfig);
-
 		// Update state after saving
 		const hasKeys = LLMClient.hasAnyProviderKeys(newConfig);
 		const availableKeys = LLMClient.getAvailableProviderKeys(newConfig);
 		setHasAnyKeys(hasKeys);
 		setAvailableProviders(availableKeys);
+
+		// Auto-select provider if only one API key is available and current provider is not available
+		if (hasKeys && availableKeys.length === 1) {
+			const availableProvider = availableKeys[0] as 'openai' | 'anthropic';
+			if (!LLMClient.isProviderAvailable(newConfig.provider, newConfig)) {
+				const defaultModel =
+					availableProvider === 'openai' ? 'gpt-4.1' : 'claude-4-sonnet';
+				newConfig = {
+					...newConfig,
+					provider: availableProvider,
+					model: defaultModel,
+				};
+			}
+		}
+
+		saveConfig(newConfig);
 
 		// Return to menu
 		setView('menu');
