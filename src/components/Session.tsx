@@ -1,8 +1,10 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {useStdout} from 'ink';
 import {Session as SessionType} from '../types/index.js';
 import {SessionManager} from '../services/sessionManager.js';
 import {shortcutManager} from '../services/shortcutManager.js';
+import {AutopilotMonitor} from '../services/autopilotMonitor.js';
+import {configurationManager} from '../services/configurationManager.js';
 
 interface SessionProps {
 	session: SessionType;
@@ -17,6 +19,9 @@ const Session: React.FC<SessionProps> = ({
 }) => {
 	const {stdout} = useStdout();
 	const [isExiting, setIsExiting] = useState(false);
+	const [autopilotStatus, setAutopilotStatus] = useState<string>('STANDBY');
+	const [guidancesProvided, setGuidancesProvided] = useState(0);
+	const autopilotMonitorRef = useRef<AutopilotMonitor | null>(null);
 
 	useEffect(() => {
 		if (!stdout) return;
@@ -55,6 +60,43 @@ const Session: React.FC<SessionProps> = ({
 
 		// Mark session as active (this will trigger the restore event)
 		sessionManager.setSessionActive(session.worktreePath, true);
+
+		// Initialize auto-pilot monitor
+		const autopilotConfig = configurationManager.getAutopilotConfig();
+		const autopilotMonitor = new AutopilotMonitor(autopilotConfig);
+		autopilotMonitorRef.current = autopilotMonitor;
+
+		// Initialize autopilot state if needed
+		if (!session.autopilotState) {
+			session.autopilotState = {
+				isActive: false,
+				guidancesProvided: 0,
+				analysisInProgress: false,
+			};
+		}
+
+		// Update initial state
+		setAutopilotStatus(session.autopilotState.isActive ? 'ACTIVE' : 'STANDBY');
+		setGuidancesProvided(session.autopilotState.guidancesProvided);
+
+		// Auto-pilot event handlers
+		const handleAutopilotStatusChange = (
+			changedSession: SessionType,
+			status: string,
+		) => {
+			if (changedSession.id === session.id) {
+				setAutopilotStatus(status);
+			}
+		};
+
+		const handleGuidanceProvided = (changedSession: SessionType) => {
+			if (changedSession.id === session.id && changedSession.autopilotState) {
+				setGuidancesProvided(changedSession.autopilotState.guidancesProvided);
+			}
+		};
+
+		autopilotMonitor.on('statusChanged', handleAutopilotStatusChange);
+		autopilotMonitor.on('guidanceProvided', handleGuidanceProvided);
 
 		// Immediately resize the PTY and terminal to current dimensions
 		// This fixes rendering issues when terminal width changed while in menu
@@ -119,6 +161,22 @@ const Session: React.FC<SessionProps> = ({
 		const handleStdinData = (data: string) => {
 			if (isExiting) return;
 
+			// Check for auto-pilot toggle
+			if (data === 'p' && autopilotMonitorRef.current) {
+				const monitor = autopilotMonitorRef.current;
+				if (monitor.isLLMAvailable()) {
+					const isActive = monitor.toggle(session);
+					const status = isActive ? 'ACTIVE' : 'STANDBY';
+					const message = `✈️ Auto-pilot: ${status}\n`;
+					session.process.write(message);
+				} else {
+					// Show message that OpenAI API key is needed
+					const message = '✈️ Auto-pilot: OPENAI_API_KEY required\n';
+					session.process.write(message);
+				}
+				return;
+			}
+
 			// Check for return to menu shortcut
 			const returnToMenuShortcut = shortcutManager.getShortcuts().returnToMenu;
 			const shortcutCode =
@@ -162,6 +220,13 @@ const Session: React.FC<SessionProps> = ({
 				}
 			}
 
+			// Cleanup auto-pilot monitor
+			if (autopilotMonitorRef.current) {
+				autopilotMonitorRef.current.disable(session);
+				autopilotMonitorRef.current.destroy();
+				autopilotMonitorRef.current = null;
+			}
+
 			// Mark session as inactive
 			sessionManager.setSessionActive(session.worktreePath, false);
 
@@ -174,6 +239,7 @@ const Session: React.FC<SessionProps> = ({
 	}, [session, sessionManager, stdout, onReturnToMenu, isExiting]);
 
 	// Return null to render nothing (PTY output goes directly to stdout)
+	// Auto-pilot status is displayed via the PTY output when toggled
 	return null;
 };
 
