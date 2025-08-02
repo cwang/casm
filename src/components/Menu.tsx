@@ -553,7 +553,8 @@ const Menu: React.FC<MenuProps> = ({
 				<Text dimColor>
 					Status: {STATUS_ICONS.BUSY} {STATUS_LABELS.BUSY}{' '}
 					{STATUS_ICONS.WAITING} {STATUS_LABELS.WAITING} {STATUS_ICONS.IDLE}{' '}
-					{STATUS_LABELS.IDLE}
+					{STATUS_LABELS.IDLE} | Autopilot:{' '}
+					{autopilotEnabled ? '✈️ ON' : '✈️ OFF'}
 				</Text>
 				<Text dimColor>
 					{isSearchMode

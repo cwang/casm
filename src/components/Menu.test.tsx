@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import {render} from 'ink-testing-library';
 import Menu from './Menu.js';
@@ -68,6 +69,19 @@ vi.mock('../hooks/useSearchMode.js', () => ({
 		setSearchQuery: vi.fn(),
 		handleKey: vi.fn(),
 	}),
+}));
+
+vi.mock('../services/configurationManager.js', () => ({
+	configurationManager: {
+		getAutopilotConfig: vi.fn().mockReturnValue({
+			enabled: false,
+			provider: 'openai',
+			model: 'gpt-4',
+			maxGuidancesPerHour: 3,
+			analysisDelayMs: 3000,
+		}),
+		setAutopilotConfig: vi.fn(),
+	},
 }));
 
 describe('Menu component rendering', () => {
@@ -295,5 +309,99 @@ describe('Menu component rendering', () => {
 		// Make sure they don't have number prefixes
 		expect(output).not.toContain('10 ❯ Project A');
 		expect(output).not.toContain('11 ❯ Project B');
+	});
+
+	it('should display autopilot toggle option in menu when not in search mode', async () => {
+		const onSelectWorktree = vi.fn();
+
+		const {lastFrame} = render(
+			<Menu
+				sessionManager={sessionManager}
+				worktreeService={worktreeService}
+				onSelectWorktree={onSelectWorktree}
+			/>,
+		);
+
+		await new Promise(resolve => setTimeout(resolve, 100));
+
+		const output = lastFrame();
+
+		// Check that autopilot toggle appears in menu
+		expect(output).toContain('P ✈️  Autopilot: OFF');
+		expect(output).toContain('P-Autopilot');
+	});
+
+	it('should display autopilot as ON when enabled in configuration', async () => {
+		const onSelectWorktree = vi.fn();
+
+		// Mock autopilot as enabled
+		const {configurationManager} = await import(
+			'../services/configurationManager.js'
+		);
+		vi.mocked(configurationManager.getAutopilotConfig).mockReturnValue({
+			enabled: true,
+			provider: 'openai',
+			model: 'gpt-4',
+			maxGuidancesPerHour: 3,
+			analysisDelayMs: 3000,
+		});
+
+		const {lastFrame} = render(
+			<Menu
+				sessionManager={sessionManager}
+				worktreeService={worktreeService}
+				onSelectWorktree={onSelectWorktree}
+			/>,
+		);
+
+		await new Promise(resolve => setTimeout(resolve, 100));
+
+		const output = lastFrame();
+
+		// Check that autopilot toggle shows ON
+		expect(output).toContain('P ✈️  Autopilot: ON');
+	});
+
+	it('should call toggle autopilot when autopilot menu item is selected', async () => {
+		const onSelectWorktree = vi.fn();
+
+		// Mock useInput to simulate selection
+		const {useInput} = await import('ink');
+		const mockUseInput = vi.mocked(useInput);
+
+		const {configurationManager} = await import(
+			'../services/configurationManager.js'
+		);
+		const mockSetAutopilotConfig = vi.mocked(
+			configurationManager.setAutopilotConfig,
+		);
+
+		render(
+			<Menu
+				sessionManager={sessionManager}
+				worktreeService={worktreeService}
+				onSelectWorktree={onSelectWorktree}
+			/>,
+		);
+
+		await new Promise(resolve => setTimeout(resolve, 100));
+
+		// Get the input handler function
+		const inputHandler = mockUseInput.mock.calls[0]?.[0];
+		expect(inputHandler).toBeDefined();
+
+		// Simulate 'p' key press
+		if (inputHandler) {
+			inputHandler('p', {} as any);
+		}
+
+		// Verify that setAutopilotConfig was called with enabled: true
+		expect(mockSetAutopilotConfig).toHaveBeenCalledWith({
+			enabled: true,
+			provider: 'openai',
+			model: 'gpt-4',
+			maxGuidancesPerHour: 3,
+			analysisDelayMs: 3000,
+		});
 	});
 });
