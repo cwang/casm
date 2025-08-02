@@ -186,20 +186,74 @@ setAutopilotConfig(autopilotConfig: AutopilotConfig): void {
 }
 ```
 
+## API Key Configuration
+
+### Environment Variables (Recommended)
+
+CCManager uses environment variables for API key storage, following security best practices:
+
+```bash
+# Set up API keys (choose one or both)
+export OPENAI_API_KEY="your-openai-key"
+export ANTHROPIC_API_KEY="your-anthropic-key"
+```
+
+### Why Environment Variables?
+
+**Security Benefits:**
+- Keys not stored in plaintext configuration files
+- No risk of accidental exposure through config sharing
+- Follows industry standard practices for credential management
+- Aligns with how other development tools expect API keys
+
+**Implementation Details:**
+- Keys are checked at runtime via `process.env[provider.requiresKey]`
+- UI automatically detects available providers based on present keys
+- No keys = Autopilot shows as "DISABLED"
+- Partial keys = Only available providers shown in configuration
+
+### Getting API Keys
+
+**OpenAI API Key:**
+1. Visit [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+2. Create account or sign in
+3. Generate new secret key
+4. Export as `OPENAI_API_KEY` environment variable
+
+**Anthropic API Key:**
+1. Visit [console.anthropic.com](https://console.anthropic.com/)
+2. Create account or sign in
+3. Navigate to API Keys section
+4. Create new key
+5. Export as `ANTHROPIC_API_KEY` environment variable
+
+### Making Keys Persistent
+
+Add to your shell configuration file (`~/.bashrc`, `~/.zshrc`, etc.):
+
+```bash
+# Add to shell profile for persistence
+echo 'export OPENAI_API_KEY="your-key-here"' >> ~/.bashrc
+echo 'export ANTHROPIC_API_KEY="your-key-here"' >> ~/.bashrc
+
+# Reload shell configuration
+source ~/.bashrc
+```
+
 ## Usage Examples
 
 ### Basic Usage
 
 ```bash
 # Set up API keys (choose one or both)
-export OPENAI_API_KEY="your-openai-key"
+export OPENAI_API_KEY="your-openai-key" 
 export ANTHROPIC_API_KEY="your-anthropic-key"
 
 # Start CCManager
 npx ccmanager
 
-# In any session, press 'p' to toggle auto-pilot
-# ✈️ Auto-pilot: ACTIVE
+# Access Autopilot via main menu (P key) or Configuration → Configure Autopilot
+# ⚡ Autopilot: ON/OFF/DISABLED based on API key availability
 ```
 
 ### Provider Switching
