@@ -149,7 +149,8 @@ describe('ContextBuilder', () => {
 			mockReaddir.mockResolvedValue([] as any);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
-			const result = await builderWithDisabled.buildProjectContext('/test/project');
+			const result =
+				await builderWithDisabled.buildProjectContext('/test/project');
 
 			expect(result.projectType.framework).toBe('unknown');
 			expect(result.projectType.language).toBe('unknown');
@@ -173,7 +174,8 @@ describe('ContextBuilder', () => {
 			mockReaddir.mockResolvedValue([] as any);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
-			const result = await builderWithDisabled.buildProjectContext('/test/project');
+			const result =
+				await builderWithDisabled.buildProjectContext('/test/project');
 
 			expect(result.gitStatus).toBeUndefined();
 			expect(mockGetGitStatus).not.toHaveBeenCalled();
@@ -237,7 +239,9 @@ describe('ContextBuilder', () => {
 
 	describe('error handling', () => {
 		it('should return minimal context on error', async () => {
-			mockDetector.detectProjectType.mockRejectedValue(new Error('Detection failed'));
+			mockDetector.detectProjectType.mockRejectedValue(
+				new Error('Detection failed'),
+			);
 
 			const result = await contextBuilder.buildProjectContext('/test/project');
 
@@ -362,7 +366,8 @@ describe('ContextBuilder', () => {
 			mockReaddir.mockResolvedValue([] as any);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
-			const patterns = await contextBuilder.getCompliancePatterns('/test/project');
+			const patterns =
+				await contextBuilder.getCompliancePatterns('/test/project');
 
 			expect(patterns).toEqual(mockPatterns);
 			expect(mockDetector.getCompliancePatterns).toHaveBeenCalledWith({

@@ -211,7 +211,9 @@ export class GuidanceOrchestrator {
 		this.config = config;
 
 		// Update context-aware source if it exists
-		const contextAwareSource = this.sources.get('context-aware') as ContextAwareGuidanceSource;
+		const contextAwareSource = this.sources.get(
+			'context-aware',
+		) as ContextAwareGuidanceSource;
 		if (contextAwareSource) {
 			contextAwareSource.updateConfig(config);
 		}

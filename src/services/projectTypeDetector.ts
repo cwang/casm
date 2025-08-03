@@ -1,5 +1,5 @@
 import {readFile, access, readdir} from 'fs/promises';
-import {join, basename} from 'path';
+import {join} from 'path';
 import type {
 	ProjectType,
 	ArchitecturalPattern,
@@ -56,7 +56,9 @@ export class ProjectTypeDetector {
 
 		// Add test framework patterns
 		if (projectType.testFramework) {
-			patterns.push(...this.getTestFrameworkPatterns(projectType.testFramework));
+			patterns.push(
+				...this.getTestFrameworkPatterns(projectType.testFramework),
+			);
 		}
 
 		return patterns;
@@ -225,7 +227,10 @@ export class ProjectTypeDetector {
 			return 'typescript';
 		}
 
-		if (files.includes('requirements.txt') || files.includes('pyproject.toml')) {
+		if (
+			files.includes('requirements.txt') ||
+			files.includes('pyproject.toml')
+		) {
 			return 'python';
 		}
 
@@ -259,7 +264,10 @@ export class ProjectTypeDetector {
 			return 'pnpm';
 		}
 
-		if (files.includes('webpack.config.js') || files.includes('webpack.config.ts')) {
+		if (
+			files.includes('webpack.config.js') ||
+			files.includes('webpack.config.ts')
+		) {
 			return 'webpack';
 		}
 
@@ -280,7 +288,7 @@ export class ProjectTypeDetector {
 
 	private detectTestFramework(
 		packageJson: any,
-		directories: string[],
+		_directories: string[],
 	): ProjectType['testFramework'] | undefined {
 		const dependencies = {
 			...packageJson.dependencies,
@@ -321,7 +329,10 @@ export class ProjectTypeDetector {
 		return mvcDirs.filter(dir => directories.includes(dir)).length >= 2;
 	}
 
-	private hasMicroserviceStructure(packageJson: any, directories: string[]): boolean {
+	private hasMicroserviceStructure(
+		packageJson: any,
+		directories: string[],
+	): boolean {
 		const serviceDirs = ['services', 'api', 'endpoints'];
 		return (
 			serviceDirs.some(dir => directories.includes(dir)) ||
@@ -330,7 +341,10 @@ export class ProjectTypeDetector {
 		);
 	}
 
-	private hasMonorepoStructure(directories: string[], packageJson: any): boolean {
+	private hasMonorepoStructure(
+		directories: string[],
+		packageJson: any,
+	): boolean {
 		return (
 			directories.some(dir => ['packages', 'apps', 'libs'].includes(dir)) ||
 			!!packageJson.workspaces
@@ -344,7 +358,8 @@ export class ProjectTypeDetector {
 					id: 'react-hooks-pattern',
 					pattern: /componentDidMount|componentWillMount/,
 					severity: 'warning',
-					message: 'Consider using React hooks instead of class lifecycle methods',
+					message:
+						'Consider using React hooks instead of class lifecycle methods',
 					category: 'maintainability',
 					framework: 'react',
 				},

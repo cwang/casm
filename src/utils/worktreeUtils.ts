@@ -309,7 +309,8 @@ export function calculateColumnPositions(items: WorktreeItem[]) {
 
 	// Simple column positioning
 	const projectContextColumn = maxBranchLength + MIN_COLUMN_PADDING;
-	const fileChangesColumn = projectContextColumn + maxProjectContextLength + MIN_COLUMN_PADDING;
+	const fileChangesColumn =
+		projectContextColumn + maxProjectContextLength + MIN_COLUMN_PADDING;
 	const aheadBehindColumn =
 		fileChangesColumn + maxFileChangesLength + MIN_COLUMN_PADDING + 2;
 	const parentBranchColumn =
@@ -345,7 +346,8 @@ export function assembleWorktreeLabel(
 
 	// Add project context if available
 	if (item.projectContext && columns.projectContext) {
-		label = padTo(label, currentLength, columns.projectContext) + item.projectContext;
+		label =
+			padTo(label, currentLength, columns.projectContext) + item.projectContext;
 		currentLength = columns.projectContext + item.lengths.projectContext;
 	}
 

@@ -108,7 +108,9 @@ export class ContextBuilder {
 
 			const validFiles = fileStats
 				.filter(
-					(result): result is PromiseFulfilledResult<{file: string; mtime: Date}> =>
+					(
+						result,
+					): result is PromiseFulfilledResult<{file: string; mtime: Date}> =>
 						result.status === 'fulfilled',
 				)
 				.map(result => result.value);
@@ -227,7 +229,9 @@ export class ContextBuilder {
 
 			return items.some(item => {
 				if (item.isFile()) {
-					return docFiles.some(doc => item.name.toLowerCase() === doc.toLowerCase());
+					return docFiles.some(
+						doc => item.name.toLowerCase() === doc.toLowerCase(),
+					);
 				}
 				if (item.isDirectory()) {
 					return item.name.toLowerCase() === 'docs';
@@ -280,7 +284,7 @@ export class ContextBuilder {
 	/**
 	 * Create minimal context when building fails
 	 */
-	private createMinimalContext(projectPath: string): ProjectContext {
+	private createMinimalContext(_projectPath: string): ProjectContext {
 		return {
 			projectType: this.createUnknownProjectType(),
 			recentFiles: [],
@@ -304,9 +308,7 @@ export class ContextBuilder {
 	 */
 	async getCompliancePatterns(projectPath: string) {
 		const context = await this.buildProjectContext(projectPath);
-		return this.projectTypeDetector.getCompliancePatterns(
-			context.projectType,
-		);
+		return this.projectTypeDetector.getCompliancePatterns(context.projectType);
 	}
 
 	/**

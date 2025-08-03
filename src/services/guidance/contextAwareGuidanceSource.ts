@@ -7,6 +7,7 @@ import type {
 } from '../../types/index.js';
 import {ContextBuilder} from '../contextBuilder.js';
 import {ContextPatterns, GuidancePattern} from '../contextPatterns.js';
+import {ConfirmationDialogHandler} from '../confirmationDialogHandler.js';
 
 /**
  * Context-aware guidance source that provides framework-specific, intelligent guidance
@@ -19,12 +20,14 @@ export class ContextAwareGuidanceSource implements GuidanceSource {
 
 	private contextBuilder: ContextBuilder;
 	private contextPatterns: ContextPatterns;
+	private confirmationHandler: ConfirmationDialogHandler;
 	private config: ContextAwareConfig;
 
 	constructor(config: AutopilotConfig) {
 		this.config = this.getContextAwareConfig(config);
 		this.contextBuilder = new ContextBuilder(this.config);
 		this.contextPatterns = new ContextPatterns();
+		this.confirmationHandler = new ConfirmationDialogHandler();
 	}
 
 	/**
@@ -47,6 +50,15 @@ export class ContextAwareGuidanceSource implements GuidanceSource {
 				`📋 Project context: ${projectContext.projectType.framework}/${projectContext.projectType.language}`,
 			);
 
+			// Check for confirmation dialogs first (highest priority)
+			const confirmationResult = this.handleConfirmationDialogs(
+				context.terminalOutput,
+				projectContext,
+			);
+			if (confirmationResult) {
+				return confirmationResult;
+			}
+
 			// Get framework-specific patterns
 			const patterns = this.contextPatterns.getGuidancePatterns(
 				projectContext,
@@ -68,21 +80,24 @@ export class ContextAwareGuidanceSource implements GuidanceSource {
 
 			// Select best pattern (highest priority)
 			const bestPattern = matchedPatterns[0];
-			
+
 			if (!bestPattern) {
 				return this.createNoGuidanceResult(
 					'No valid patterns found',
 					projectContext,
 				);
 			}
-			
+
 			console.log(
 				`🎯 Matched pattern: ${bestPattern.id} (priority: ${bestPattern.priority})`,
 			);
 
 			return {
 				shouldIntervene: true,
-				confidence: this.calculateConfidence(bestPattern, matchedPatterns.length),
+				confidence: this.calculateConfidence(
+					bestPattern,
+					matchedPatterns.length,
+				),
 				guidance: this.enhanceGuidance(bestPattern, projectContext),
 				reasoning: `Framework-specific guidance for ${projectContext.projectType.framework} project: ${bestPattern.category}`,
 				source: this.id,
@@ -127,6 +142,73 @@ export class ContextAwareGuidanceSource implements GuidanceSource {
 	}
 
 	/**
+	 * Handle confirmation dialogs with intelligent auto-responses
+	 */
+	private handleConfirmationDialogs(
+		terminalOutput: string,
+		projectContext: any,
+	): GuidanceResult | null {
+		// Check if this looks like a confirmation dialog
+		if (!this.isConfirmationDialog(terminalOutput)) {
+			return null;
+		}
+
+		console.log(`🤖 Detected confirmation dialog in output`);
+
+		// Use the confirmation handler to make decision
+		const decision = this.confirmationHandler.shouldAutoConfirm(
+			terminalOutput,
+			projectContext,
+		);
+
+		// Only auto-respond if confidence is above threshold
+		if (
+			decision.shouldConfirm &&
+			decision.confidence >= this.confirmationHandler.getConfidenceThreshold()
+		) {
+			console.log(
+				`✅ Auto-confirming dialog: "${decision.dialogType}" with confidence ${decision.confidence}`,
+			);
+
+			return {
+				shouldIntervene: true,
+				confidence: decision.confidence,
+				guidance: decision.response || '1', // Default to "Yes"
+				reasoning: `Auto-confirmed ${decision.dialogType}: ${decision.reasoning}`,
+				source: this.id,
+				priority: 1, // Highest priority for confirmations
+				metadata: {
+					dialogType: decision.dialogType,
+					autoConfirmed: true,
+					originalReasoning: decision.reasoning,
+				},
+			};
+		}
+
+		console.log(
+			`⚠️ Confirmation dialog detected but not auto-confirming: confidence ${decision.confidence} < ${this.confirmationHandler.getConfidenceThreshold()}`,
+		);
+
+		return null; // Let user handle manually
+	}
+
+	/**
+	 * Check if terminal output contains a confirmation dialog
+	 */
+	private isConfirmationDialog(output: string): boolean {
+		const confirmationPatterns = [
+			/Do you want/i,
+			/Would you like/i,
+			/Should I/i,
+			/Proceed with/i,
+			/Continue with/i,
+			/\d+\.\s+Yes/i, // Numbered options like "1. Yes"
+		];
+
+		return confirmationPatterns.some(pattern => pattern.test(output));
+	}
+
+	/**
 	 * Calculate confidence based on pattern quality and context
 	 */
 	private calculateConfidence(
@@ -157,9 +239,10 @@ export class ContextAwareGuidanceSource implements GuidanceSource {
 	/**
 	 * Enhance guidance with project context
 	 */
-	private enhanceGuidance(pattern: GuidancePattern, projectContext: any): string {
-		const contextSummary = this.contextPatterns.getContextSummary(projectContext);
-		
+	private enhanceGuidance(
+		pattern: GuidancePattern,
+		projectContext: any,
+	): string {
 		// Add context-specific enhancements based on pattern category
 		let enhancedGuidance = pattern.guidance;
 

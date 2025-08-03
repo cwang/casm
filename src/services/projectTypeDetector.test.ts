@@ -140,7 +140,9 @@ describe('ProjectTypeDetector', () => {
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			mockReaddir
-				.mockResolvedValueOnce([{name: 'packages', isDirectory: () => true}] as any)
+				.mockResolvedValueOnce([
+					{name: 'packages', isDirectory: () => true},
+				] as any)
 				.mockResolvedValueOnce([
 					{name: 'yarn.lock', isFile: () => true},
 					{name: 'package.json', isFile: () => true},
@@ -161,12 +163,10 @@ describe('ProjectTypeDetector', () => {
 			mockAccess.mockResolvedValue(undefined);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
-			mockReaddir
-				.mockResolvedValueOnce([] as any)
-				.mockResolvedValueOnce([
-					{name: 'vite.config.ts', isFile: () => true},
-					{name: 'package.json', isFile: () => true},
-				] as any);
+			mockReaddir.mockResolvedValueOnce([] as any).mockResolvedValueOnce([
+				{name: 'vite.config.ts', isFile: () => true},
+				{name: 'package.json', isFile: () => true},
+			] as any);
 
 			const result = await detector.detectProjectType('/test/vite');
 
@@ -270,7 +270,7 @@ describe('ProjectTypeDetector', () => {
 
 			// First call
 			await detector.detectProjectType('/test/cached');
-			
+
 			// Second call should use cache
 			await detector.detectProjectType('/test/cached');
 

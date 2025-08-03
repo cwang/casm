@@ -269,9 +269,24 @@ export interface IWorktreeService {
 
 // Context-Aware Intelligence Types (PR#4)
 export interface ProjectType {
-	framework: 'react' | 'node' | 'typescript' | 'vue' | 'next' | 'express' | 'nestjs' | 'unknown';
+	framework:
+		| 'react'
+		| 'node'
+		| 'typescript'
+		| 'vue'
+		| 'next'
+		| 'express'
+		| 'nestjs'
+		| 'unknown';
 	language: 'typescript' | 'javascript' | 'python' | 'go' | 'rust' | 'unknown';
-	buildSystem: 'npm' | 'yarn' | 'pnpm' | 'webpack' | 'vite' | 'rollup' | 'unknown';
+	buildSystem:
+		| 'npm'
+		| 'yarn'
+		| 'pnpm'
+		| 'webpack'
+		| 'vite'
+		| 'rollup'
+		| 'unknown';
 	testFramework?: 'jest' | 'vitest' | 'mocha' | 'cypress' | 'playwright';
 	patterns: ArchitecturalPattern[];
 }

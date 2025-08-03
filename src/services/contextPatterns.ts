@@ -1,8 +1,4 @@
-import type {
-	ProjectContext,
-	CompliancePattern,
-	ProjectType,
-} from '../types/index.js';
+import type {ProjectContext, ProjectType} from '../types/index.js';
 
 /**
  * Framework-specific guidance patterns for context-aware intelligence
@@ -18,7 +14,9 @@ export class ContextPatterns {
 		const patterns: GuidancePattern[] = [];
 
 		// Add framework-specific patterns
-		patterns.push(...this.getFrameworkPatterns(context.projectType, terminalOutput));
+		patterns.push(
+			...this.getFrameworkPatterns(context.projectType, terminalOutput),
+		);
 
 		// Add git workflow patterns
 		if (context.gitStatus) {
@@ -27,11 +25,18 @@ export class ContextPatterns {
 
 		// Add testing patterns
 		if (context.hasTests) {
-			patterns.push(...this.getTestingPatterns(context.projectType, terminalOutput));
+			patterns.push(
+				...this.getTestingPatterns(context.projectType, terminalOutput),
+			);
 		}
 
 		// Add dependency patterns
 		patterns.push(...this.getDependencyPatterns(context, terminalOutput));
+
+		// Add confirmation dialog patterns
+		patterns.push(
+			...this.getConfirmationDialogPatterns(context, terminalOutput),
+		);
 
 		return patterns.sort((a, b) => b.priority - a.priority);
 	}
@@ -78,7 +83,8 @@ export class ContextPatterns {
 				id: 'react-hook-deps',
 				pattern: /React Hook useEffect has missing dependencies/,
 				priority: 9,
-				guidance: 'Add missing dependencies to useEffect dependency array or use useCallback for stable references',
+				guidance:
+					'Add missing dependencies to useEffect dependency array or use useCallback for stable references',
 				category: 'react-hooks',
 			});
 		}
@@ -89,7 +95,8 @@ export class ContextPatterns {
 				id: 'react-state-update',
 				pattern: /setState.*Warning/,
 				priority: 8,
-				guidance: 'Consider using functional state updates or useCallback to avoid state update warnings',
+				guidance:
+					'Consider using functional state updates or useCallback to avoid state update warnings',
 				category: 'react-state',
 			});
 		}
@@ -100,7 +107,8 @@ export class ContextPatterns {
 				id: 'react-performance',
 				pattern: /re-render|performance/i,
 				priority: 7,
-				guidance: 'Consider using React.memo, useMemo, or useCallback to optimize component performance',
+				guidance:
+					'Consider using React.memo, useMemo, or useCallback to optimize component performance',
 				category: 'react-performance',
 			});
 		}
@@ -111,7 +119,8 @@ export class ContextPatterns {
 				id: 'react-component-error',
 				pattern: /component.*error/i,
 				priority: 8,
-				guidance: 'Check component props, state initialization, and error boundaries for React component issues',
+				guidance:
+					'Check component props, state initialization, and error boundaries for React component issues',
 				category: 'react-component',
 			});
 		}
@@ -131,7 +140,8 @@ export class ContextPatterns {
 				id: 'nextjs-hydration',
 				pattern: /hydration|Hydration/i,
 				priority: 9,
-				guidance: 'Fix hydration mismatch by ensuring server and client render the same content. Use useEffect for client-only code.',
+				guidance:
+					'Fix hydration mismatch by ensuring server and client render the same content. Use useEffect for client-only code.',
 				category: 'nextjs-ssr',
 			});
 		}
@@ -142,7 +152,8 @@ export class ContextPatterns {
 				id: 'nextjs-routing',
 				pattern: /router.*error/i,
 				priority: 8,
-				guidance: 'Check Next.js router usage, dynamic routes, and navigation patterns',
+				guidance:
+					'Check Next.js router usage, dynamic routes, and navigation patterns',
 				category: 'nextjs-routing',
 			});
 		}
@@ -162,7 +173,8 @@ export class ContextPatterns {
 				id: 'typescript-type-error',
 				pattern: /Type.*error/i,
 				priority: 9,
-				guidance: 'Fix TypeScript type errors by adding proper type annotations, interfaces, or type assertions',
+				guidance:
+					'Fix TypeScript type errors by adding proper type annotations, interfaces, or type assertions',
 				category: 'typescript-types',
 			});
 		}
@@ -173,7 +185,8 @@ export class ContextPatterns {
 				id: 'typescript-any-usage',
 				pattern: /'any'|any type/i,
 				priority: 7,
-				guidance: 'Replace "any" types with specific type definitions for better type safety',
+				guidance:
+					'Replace "any" types with specific type definitions for better type safety',
 				category: 'typescript-types',
 			});
 		}
@@ -184,7 +197,8 @@ export class ContextPatterns {
 				id: 'typescript-module-resolution',
 				pattern: /Cannot find module/i,
 				priority: 8,
-				guidance: 'Check import paths, module resolution, and type declarations for missing modules',
+				guidance:
+					'Check import paths, module resolution, and type declarations for missing modules',
 				category: 'typescript-modules',
 			});
 		}
@@ -204,7 +218,8 @@ export class ContextPatterns {
 				id: 'express-route-error',
 				pattern: /route.*error/i,
 				priority: 8,
-				guidance: 'Check Express route definitions, middleware order, and error handling',
+				guidance:
+					'Check Express route definitions, middleware order, and error handling',
 				category: 'express-routing',
 			});
 		}
@@ -215,7 +230,8 @@ export class ContextPatterns {
 				id: 'express-middleware',
 				pattern: /middleware/i,
 				priority: 7,
-				guidance: 'Verify middleware configuration, order, and next() calls in Express middleware',
+				guidance:
+					'Verify middleware configuration, order, and next() calls in Express middleware',
 				category: 'express-middleware',
 			});
 		}
@@ -246,7 +262,8 @@ export class ContextPatterns {
 				id: 'node-port-in-use',
 				pattern: /EADDRINUSE/,
 				priority: 8,
-				guidance: 'Port is already in use. Try a different port or stop the existing process',
+				guidance:
+					'Port is already in use. Try a different port or stop the existing process',
 				category: 'node-runtime',
 			});
 		}
@@ -266,7 +283,8 @@ export class ContextPatterns {
 		if (!context.gitStatus) return patterns;
 
 		// Uncommitted changes
-		const hasChanges = context.gitStatus.filesAdded > 0 || context.gitStatus.filesDeleted > 0;
+		const hasChanges =
+			context.gitStatus.filesAdded > 0 || context.gitStatus.filesDeleted > 0;
 		if (hasChanges && output.includes('commit')) {
 			patterns.push({
 				id: 'git-uncommitted-changes',
@@ -283,7 +301,8 @@ export class ContextPatterns {
 				id: 'git-merge-conflict',
 				pattern: /conflict|CONFLICT/i,
 				priority: 9,
-				guidance: 'Resolve merge conflicts by editing conflicted files and running git add/commit',
+				guidance:
+					'Resolve merge conflicts by editing conflicted files and running git add/commit',
 				category: 'git-conflict',
 			});
 		}
@@ -317,7 +336,8 @@ export class ContextPatterns {
 				id: 'test-failure',
 				pattern: /FAIL|failed/i,
 				priority: 8,
-				guidance: 'Review failed tests and fix implementation or update test expectations',
+				guidance:
+					'Review failed tests and fix implementation or update test expectations',
 				category: 'testing',
 			});
 		}
@@ -328,7 +348,8 @@ export class ContextPatterns {
 				id: 'jest-test-guidance',
 				pattern: /Jest/i,
 				priority: 6,
-				guidance: 'Use Jest best practices: describe blocks, proper mocking, and clear test names',
+				guidance:
+					'Use Jest best practices: describe blocks, proper mocking, and clear test names',
 				category: 'testing-jest',
 			});
 		}
@@ -338,7 +359,8 @@ export class ContextPatterns {
 				id: 'vitest-test-guidance',
 				pattern: /Vitest/i,
 				priority: 6,
-				guidance: 'Use Vitest features: fast testing, ESM support, and built-in TypeScript support',
+				guidance:
+					'Use Vitest features: fast testing, ESM support, and built-in TypeScript support',
 				category: 'testing-vitest',
 			});
 		}
@@ -361,7 +383,8 @@ export class ContextPatterns {
 				id: 'dependency-installation',
 				pattern: /npm install|yarn add/i,
 				priority: 7,
-				guidance: 'Consider checking if the package is already installed or if there are type definitions available',
+				guidance:
+					'Consider checking if the package is already installed or if there are type definitions available',
 				category: 'dependencies',
 			});
 		}
@@ -372,7 +395,8 @@ export class ContextPatterns {
 				id: 'dependency-conflict',
 				pattern: /version.*conflict/i,
 				priority: 8,
-				guidance: 'Resolve dependency version conflicts by updating package.json or using resolutions',
+				guidance:
+					'Resolve dependency version conflicts by updating package.json or using resolutions',
 				category: 'dependencies',
 			});
 		}
@@ -383,7 +407,8 @@ export class ContextPatterns {
 				id: 'security-vulnerability',
 				pattern: /vulnerability|audit/i,
 				priority: 9,
-				guidance: 'Run npm audit fix or update vulnerable packages to secure versions',
+				guidance:
+					'Run npm audit fix or update vulnerable packages to secure versions',
 				category: 'security',
 			});
 		}
@@ -399,12 +424,130 @@ export class ContextPatterns {
 		const language = context.projectType.language;
 		const hasTests = context.hasTests ? 'with tests' : 'without tests';
 		const hasGit = context.gitStatus ? 'git-managed' : 'non-git';
-		
+
 		const gitInfo = context.gitStatus
 			? ` (${context.gitStatus.filesAdded + context.gitStatus.filesDeleted} changed files, ${context.gitStatus.aheadCount} ahead, ${context.gitStatus.behindCount} behind)`
 			: '';
 
 		return `${framework}/${language} project ${hasTests}, ${hasGit}${gitInfo}. Dependencies: ${context.dependencies.slice(0, 5).join(', ')}${context.dependencies.length > 5 ? '...' : ''}`;
+	}
+
+	/**
+	 * Confirmation dialog patterns - auto-respond to common Claude Code questions
+	 */
+	private getConfirmationDialogPatterns(
+		context: ProjectContext,
+		output: string,
+	): GuidancePattern[] {
+		const patterns: GuidancePattern[] = [];
+
+		// Test running confirmations
+		if (
+			output.includes('Do you want') &&
+			/run.*test|npm test|yarn test/.test(output)
+		) {
+			patterns.push({
+				id: 'confirm-test-execution',
+				pattern:
+					/Do you want.*run.*test|Do you want.*npm test|Do you want.*yarn test/i,
+				priority: 10, // Highest priority for confirmations
+				guidance: '1', // Select "Yes" option
+				category: 'confirmation-dialog',
+			});
+		}
+
+		// File creation confirmations
+		if (
+			output.includes('Do you want') &&
+			/create.*file|create.*\.(ts|js|tsx|jsx)/.test(output)
+		) {
+			// Check if it's a service/utility file (generally safe)
+			if (/service|util|helper|config|debug|logger/.test(output)) {
+				patterns.push({
+					id: 'confirm-utility-file-creation',
+					pattern:
+						/Do you want.*create.*(?:service|util|helper|config|debug|logger)/i,
+					priority: 9,
+					guidance: '1', // Select "Yes" option
+					category: 'confirmation-dialog',
+				});
+			}
+		}
+
+		// Build script confirmations
+		if (
+			output.includes('Do you want') &&
+			/run.*build|npm run build|yarn build/.test(output)
+		) {
+			patterns.push({
+				id: 'confirm-build-execution',
+				pattern:
+					/Do you want.*run.*build|Do you want.*npm run build|Do you want.*yarn build/i,
+				priority: 9,
+				guidance: '1', // Select "Yes" option
+				category: 'confirmation-dialog',
+			});
+		}
+
+		// Package installation confirmations (more cautious)
+		if (
+			output.includes('Do you want') &&
+			/install.*package|npm install|yarn add/.test(output)
+		) {
+			// Only auto-confirm known safe packages
+			if (this.isSafePackageInstall(output, context.projectType)) {
+				patterns.push({
+					id: 'confirm-safe-package-install',
+					pattern:
+						/Do you want.*install.*(?:eslint|prettier|jest|vitest|@types)/i,
+					priority: 8,
+					guidance: '1', // Select "Yes" option
+					category: 'confirmation-dialog',
+				});
+			}
+		}
+
+		// Git staging confirmations (generally safe)
+		if (output.includes('Do you want') && /git.*add|stage.*file/.test(output)) {
+			patterns.push({
+				id: 'confirm-git-staging',
+				pattern: /Do you want.*git.*add|Do you want.*stage.*file/i,
+				priority: 8,
+				guidance: '1', // Select "Yes" option
+				category: 'confirmation-dialog',
+			});
+		}
+
+		return patterns;
+	}
+
+	/**
+	 * Check if package installation is safe based on project type
+	 */
+	private isSafePackageInstall(
+		output: string,
+		projectType: ProjectType,
+	): boolean {
+		const safePackages = [
+			'eslint',
+			'prettier',
+			'jest',
+			'vitest',
+			'@types/',
+			'typescript',
+			'lodash',
+			'axios',
+		];
+
+		// Framework-specific safe packages
+		if (projectType.framework === 'react') {
+			safePackages.push('react-router', 'styled-components');
+		}
+		if (projectType.framework === 'express') {
+			safePackages.push('cors', 'helmet', 'morgan');
+		}
+
+		return safePackages.some(pkg => output.includes(pkg));
 	}
 }
 
