@@ -14,9 +14,12 @@ We acknowledge and appreciate the original work from the upstream project mainta
 
 🎥 **Watch the auto-pilot feature in action:**
 
-[Loom Demo Video](https://www.loom.com/share/your-video-id-here)
+[Enhancing Coding Sessions with Autopilot Features 🚀](https://www.loom.com/share/d979194c7f734129b21708656ad3c7b6?sid=699a3478-257f-417b-b4f5-823752a03a51)
 
-*Note: Replace the above link with your actual Loom video URL*
+This demo video showcases the new autopilot capabilities including:
+- Context-aware best practices guidance
+- Error pattern matching and recommendations
+- Guided prompts for enhanced coding sessions
 
 ## Quick Start
 
