@@ -23,9 +23,48 @@ const mockReaddir = vi.mocked(readdir);
 const mockStat = vi.mocked(stat);
 const mockReadFile = vi.mocked(readFile);
 
+// Helper to create mock Dirent objects - simplified for testing
+const createMockDirent = (name: string, isDirectory: boolean) =>
+	({
+		name,
+		isDirectory: () => isDirectory,
+		isFile: () => !isDirectory,
+		isBlockDevice: () => false,
+		isCharacterDevice: () => false,
+		isSymbolicLink: () => false,
+		isFIFO: () => false,
+		isSocket: () => false,
+	}) as any;
+
+// Helper to create mock Stats objects - simplified for testing
+const createMockStats = (mtime: Date) =>
+	({
+		mtime,
+		isFile: () => true,
+		isDirectory: () => false,
+		atime: mtime,
+		ctime: mtime,
+		birthtime: mtime,
+		size: 1024,
+		mode: 0o644,
+		uid: 1000,
+		gid: 1000,
+		ino: 123456,
+		dev: 1,
+		rdev: 0,
+		nlink: 1,
+		blksize: 4096,
+		blocks: 8,
+	}) as any;
+
 describe('ContextBuilder', () => {
 	let contextBuilder: ContextBuilder;
-	let mockDetector: any;
+	let mockDetector: {
+		detectProjectType: ReturnType<typeof vi.fn>;
+		getCompliancePatterns: ReturnType<typeof vi.fn>;
+		clearCache: ReturnType<typeof vi.fn>;
+		detectArchitecturalPatterns: ReturnType<typeof vi.fn>;
+	};
 	const defaultConfig: ContextAwareConfig = {
 		enabled: true,
 		enableFrameworkDetection: true,
@@ -42,7 +81,9 @@ describe('ContextBuilder', () => {
 			detectProjectType: vi.fn(),
 			getCompliancePatterns: vi.fn(),
 			clearCache: vi.fn(),
-		};
+			detectArchitecturalPatterns: vi.fn(),
+		} as any;
+		// @ts-expect-error - Mock implementation for testing
 		mockProjectTypeDetector.mockImplementation(() => mockDetector);
 
 		contextBuilder = new ContextBuilder(defaultConfig);
@@ -83,19 +124,19 @@ describe('ContextBuilder', () => {
 			// Mock file operations
 			mockReaddir
 				.mockResolvedValueOnce([
-					{name: 'src', isDirectory: () => true},
-					{name: 'components', isDirectory: () => true},
-					{name: '__tests__', isDirectory: () => true},
-					{name: 'README.md', isFile: () => true},
-				] as any)
+					createMockDirent('src', true),
+					createMockDirent('components', true),
+					createMockDirent('__tests__', true),
+					createMockDirent('README.md', false),
+				])
 				.mockResolvedValueOnce([
-					{name: 'App.tsx', isFile: () => true},
-					{name: 'utils.ts', isFile: () => true},
-				] as any);
+					createMockDirent('App.tsx', false),
+					createMockDirent('utils.ts', false),
+				]);
 
 			mockStat
-				.mockResolvedValueOnce({mtime: new Date('2024-01-01')} as any)
-				.mockResolvedValueOnce({mtime: new Date('2024-01-02')} as any);
+				.mockResolvedValueOnce(createMockStats(new Date('2024-01-01')))
+				.mockResolvedValueOnce(createMockStats(new Date('2024-01-02')));
 
 			mockReadFile.mockResolvedValue(
 				JSON.stringify({
@@ -146,7 +187,7 @@ describe('ContextBuilder', () => {
 				success: false,
 				error: 'Not a git repository',
 			});
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			const result =
@@ -171,7 +212,7 @@ describe('ContextBuilder', () => {
 				patterns: [],
 			});
 
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			const result =
@@ -195,7 +236,7 @@ describe('ContextBuilder', () => {
 				success: false,
 				error: 'Not a git repository',
 			});
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			// First call
@@ -219,14 +260,14 @@ describe('ContextBuilder', () => {
 				success: false,
 				error: 'Not a git repository',
 			});
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			// First call
 			await contextBuilder.buildProjectContext('/test/project');
 
 			// Manually expire cache by setting old timestamp
-			const cache = (contextBuilder as any).cache;
+			const cache = contextBuilder.cache;
 			const cachedItem = cache.get('/test/project');
 			cachedItem.cacheTimestamp = new Date(Date.now() - 10 * 60 * 1000); // 10 minutes ago
 
@@ -261,7 +302,7 @@ describe('ContextBuilder', () => {
 			});
 
 			mockGetGitStatus.mockRejectedValue(new Error('Git error'));
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			const result = await contextBuilder.buildProjectContext('/test/project');
@@ -286,7 +327,7 @@ describe('ContextBuilder', () => {
 			});
 			mockReaddir.mockResolvedValue([
 				{name: '__tests__', isDirectory: () => true},
-			] as any);
+			]);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			const result = await contextBuilder.buildProjectContext('/test/project');
@@ -308,7 +349,7 @@ describe('ContextBuilder', () => {
 			});
 			mockReaddir.mockResolvedValue([
 				{name: 'utils.test.ts', isFile: () => true},
-			] as any);
+			]);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			const result = await contextBuilder.buildProjectContext('/test/project');
@@ -328,9 +369,7 @@ describe('ContextBuilder', () => {
 				success: false,
 				error: 'Not a git repository',
 			});
-			mockReaddir.mockResolvedValue([
-				{name: 'README.md', isFile: () => true},
-			] as any);
+			mockReaddir.mockResolvedValue([createMockDirent('README.md', false)]);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			const result = await contextBuilder.buildProjectContext('/test/project');
@@ -363,7 +402,7 @@ describe('ContextBuilder', () => {
 				success: false,
 				error: 'Not a git repository',
 			});
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			const patterns =
@@ -388,7 +427,7 @@ describe('ContextBuilder', () => {
 
 			contextBuilder.updateConfig(newConfig);
 
-			const debugInfo = contextBuilder.getDebugInfo() as any;
+			const debugInfo = contextBuilder.getDebugInfo();
 			expect(debugInfo.config.cacheIntervalMinutes).toBe(10);
 		});
 	});
@@ -406,7 +445,7 @@ describe('ContextBuilder', () => {
 				success: false,
 				error: 'Not a git repository',
 			});
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			await contextBuilder.buildProjectContext('/test/project1');

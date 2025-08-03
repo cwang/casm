@@ -8,6 +8,17 @@ export type SessionState = 'idle' | 'busy' | 'waiting_input';
 
 export type StateDetectionStrategy = 'claude' | 'gemini' | 'codex';
 
+export interface PackageJson {
+	name?: string;
+	version?: string;
+	main?: string;
+	scripts?: Record<string, string>;
+	dependencies?: Record<string, string>;
+	devDependencies?: Record<string, string>;
+	workspaces?: string[] | Record<string, unknown>;
+	[key: string]: unknown;
+}
+
 export interface Worktree {
 	path: string;
 	branch?: string;

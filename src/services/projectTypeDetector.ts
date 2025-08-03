@@ -4,13 +4,14 @@ import type {
 	ProjectType,
 	ArchitecturalPattern,
 	CompliancePattern,
+	PackageJson,
 } from '../types/index.js';
 
 /**
  * Detects project type, framework, and architectural patterns from project structure
  */
 export class ProjectTypeDetector {
-	private packageJsonCache = new Map<string, any>();
+	private packageJsonCache = new Map<string, PackageJson>();
 	private directoryCache = new Map<string, string[]>();
 
 	/**
@@ -69,7 +70,7 @@ export class ProjectTypeDetector {
 	 */
 	async detectArchitecturalPatterns(
 		projectPath: string,
-		packageJson: any,
+		packageJson: PackageJson,
 		directories: string[],
 	): Promise<ArchitecturalPattern[]> {
 		const patterns: ArchitecturalPattern[] = [];
@@ -113,9 +114,9 @@ export class ProjectTypeDetector {
 		return patterns;
 	}
 
-	private async getPackageJson(projectPath: string): Promise<any> {
+	private async getPackageJson(projectPath: string): Promise<PackageJson> {
 		if (this.packageJsonCache.has(projectPath)) {
-			return this.packageJsonCache.get(projectPath);
+			return this.packageJsonCache.get(projectPath) || {};
 		}
 
 		try {
@@ -157,30 +158,30 @@ export class ProjectTypeDetector {
 	}
 
 	private detectFramework(
-		packageJson: any,
+		packageJson: PackageJson,
 		directories: string[],
 		files: string[],
 	): ProjectType['framework'] {
 		const dependencies = {
-			...packageJson.dependencies,
-			...packageJson.devDependencies,
+			...(packageJson.dependencies || {}),
+			...(packageJson.devDependencies || {}),
 		};
 
 		// React detection
-		if (dependencies?.react) {
-			if (dependencies?.next || dependencies?.['@next/core']) {
+		if (dependencies?.['react']) {
+			if (dependencies?.['next'] || dependencies?.['@next/core']) {
 				return 'next';
 			}
 			return 'react';
 		}
 
 		// Vue detection
-		if (dependencies?.vue || dependencies?.['@vue/cli']) {
+		if (dependencies?.['vue'] || dependencies?.['@vue/cli']) {
 			return 'vue';
 		}
 
 		// Express detection
-		if (dependencies?.express) {
+		if (dependencies?.['express']) {
 			return 'express';
 		}
 
@@ -192,7 +193,7 @@ export class ProjectTypeDetector {
 		// TypeScript project detection
 		if (
 			files.includes('tsconfig.json') ||
-			dependencies?.typescript ||
+			dependencies?.['typescript'] ||
 			dependencies?.['@types/node']
 		) {
 			return 'typescript';
@@ -201,7 +202,7 @@ export class ProjectTypeDetector {
 		// Node.js detection
 		if (
 			packageJson.main ||
-			packageJson.scripts?.start ||
+			packageJson.scripts?.['start'] ||
 			directories.includes('node_modules')
 		) {
 			return 'node';
@@ -211,17 +212,17 @@ export class ProjectTypeDetector {
 	}
 
 	private detectLanguage(
-		packageJson: any,
+		packageJson: PackageJson,
 		files: string[],
 	): ProjectType['language'] {
 		const dependencies = {
-			...packageJson.dependencies,
-			...packageJson.devDependencies,
+			...(packageJson.dependencies || {}),
+			...(packageJson.devDependencies || {}),
 		};
 
 		if (
 			files.includes('tsconfig.json') ||
-			dependencies?.typescript ||
+			dependencies?.['typescript'] ||
 			files.some(f => f.endsWith('.ts') || f.endsWith('.tsx'))
 		) {
 			return 'typescript';
@@ -253,7 +254,7 @@ export class ProjectTypeDetector {
 	}
 
 	private detectBuildSystem(
-		packageJson: any,
+		packageJson: PackageJson,
 		files: string[],
 	): ProjectType['buildSystem'] {
 		if (files.includes('yarn.lock')) {
@@ -287,31 +288,31 @@ export class ProjectTypeDetector {
 	}
 
 	private detectTestFramework(
-		packageJson: any,
+		packageJson: PackageJson,
 		_directories: string[],
 	): ProjectType['testFramework'] | undefined {
 		const dependencies = {
-			...packageJson.dependencies,
-			...packageJson.devDependencies,
+			...(packageJson.dependencies || {}),
+			...(packageJson.devDependencies || {}),
 		};
 
-		if (dependencies?.vitest) {
+		if (dependencies?.['vitest']) {
 			return 'vitest';
 		}
 
-		if (dependencies?.jest) {
+		if (dependencies?.['jest']) {
 			return 'jest';
 		}
 
-		if (dependencies?.mocha) {
+		if (dependencies?.['mocha']) {
 			return 'mocha';
 		}
 
-		if (dependencies?.cypress) {
+		if (dependencies?.['cypress']) {
 			return 'cypress';
 		}
 
-		if (dependencies?.playwright || dependencies?.['@playwright/test']) {
+		if (dependencies?.['playwright'] || dependencies?.['@playwright/test']) {
 			return 'playwright';
 		}
 
@@ -330,24 +331,24 @@ export class ProjectTypeDetector {
 	}
 
 	private hasMicroserviceStructure(
-		packageJson: any,
+		packageJson: PackageJson,
 		directories: string[],
 	): boolean {
 		const serviceDirs = ['services', 'api', 'endpoints'];
 		return (
 			serviceDirs.some(dir => directories.includes(dir)) ||
-			packageJson.scripts?.['start:service'] ||
-			packageJson.scripts?.['start:api']
+			Boolean(packageJson.scripts?.['start:service']) ||
+			Boolean(packageJson.scripts?.['start:api'])
 		);
 	}
 
 	private hasMonorepoStructure(
 		directories: string[],
-		packageJson: any,
+		packageJson: PackageJson,
 	): boolean {
 		return (
 			directories.some(dir => ['packages', 'apps', 'libs'].includes(dir)) ||
-			!!packageJson.workspaces
+			Boolean(packageJson.workspaces)
 		);
 	}
 

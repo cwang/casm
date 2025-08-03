@@ -48,12 +48,12 @@ describe('ProjectTypeDetector', () => {
 					{name: 'src', isDirectory: () => true},
 					{name: 'components', isDirectory: () => true},
 					{name: 'node_modules', isDirectory: () => true},
-				] as any)
+				])
 				.mockResolvedValueOnce([
 					{name: 'tsconfig.json', isFile: () => true},
 					{name: 'package.json', isFile: () => true},
 					{name: 'package-lock.json', isFile: () => true},
-				] as any);
+				]);
 
 			const result = await detector.detectProjectType('/test/project');
 
@@ -83,11 +83,11 @@ describe('ProjectTypeDetector', () => {
 				.mockResolvedValueOnce([
 					{name: 'pages', isDirectory: () => true},
 					{name: 'src', isDirectory: () => true},
-				] as any)
+				])
 				.mockResolvedValueOnce([
 					{name: 'next.config.js', isFile: () => true},
 					{name: 'package.json', isFile: () => true},
-				] as any);
+				]);
 
 			const result = await detector.detectProjectType('/test/nextjs');
 
@@ -115,11 +115,11 @@ describe('ProjectTypeDetector', () => {
 				.mockResolvedValueOnce([
 					{name: 'routes', isDirectory: () => true},
 					{name: 'controllers', isDirectory: () => true},
-				] as any)
+				])
 				.mockResolvedValueOnce([
 					{name: 'tsconfig.json', isFile: () => true},
 					{name: 'package.json', isFile: () => true},
-				] as any);
+				]);
 
 			const result = await detector.detectProjectType('/test/express');
 
@@ -140,13 +140,11 @@ describe('ProjectTypeDetector', () => {
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
 			mockReaddir
-				.mockResolvedValueOnce([
-					{name: 'packages', isDirectory: () => true},
-				] as any)
+				.mockResolvedValueOnce([{name: 'packages', isDirectory: () => true}])
 				.mockResolvedValueOnce([
 					{name: 'yarn.lock', isFile: () => true},
 					{name: 'package.json', isFile: () => true},
-				] as any);
+				]);
 
 			const result = await detector.detectProjectType('/test/monorepo');
 
@@ -163,10 +161,10 @@ describe('ProjectTypeDetector', () => {
 			mockAccess.mockResolvedValue(undefined);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
 
-			mockReaddir.mockResolvedValueOnce([] as any).mockResolvedValueOnce([
+			mockReaddir.mockResolvedValueOnce([]).mockResolvedValueOnce([
 				{name: 'vite.config.ts', isFile: () => true},
 				{name: 'package.json', isFile: () => true},
-			] as any);
+			]);
 
 			const result = await detector.detectProjectType('/test/vite');
 
@@ -185,7 +183,7 @@ describe('ProjectTypeDetector', () => {
 				}),
 			);
 
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 
 			const result = await detector.detectProjectType('/test/vitest');
 
@@ -203,7 +201,7 @@ describe('ProjectTypeDetector', () => {
 				}),
 			);
 
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 
 			const result = await detector.detectProjectType('/test/jest');
 
@@ -242,7 +240,7 @@ describe('ProjectTypeDetector', () => {
 	describe('Error handling', () => {
 		it('should handle missing package.json', async () => {
 			mockAccess.mockRejectedValue(new Error('File not found'));
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 
 			const result = await detector.detectProjectType('/test/empty');
 
@@ -253,7 +251,7 @@ describe('ProjectTypeDetector', () => {
 		it('should handle malformed package.json', async () => {
 			mockAccess.mockResolvedValue(undefined);
 			mockReadFile.mockResolvedValue('invalid json');
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 
 			const result = await detector.detectProjectType('/test/malformed');
 
@@ -266,7 +264,7 @@ describe('ProjectTypeDetector', () => {
 		it('should cache package.json results', async () => {
 			mockAccess.mockResolvedValue(undefined);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 
 			// First call
 			await detector.detectProjectType('/test/cached');
@@ -280,7 +278,7 @@ describe('ProjectTypeDetector', () => {
 		it('should clear cache', async () => {
 			mockAccess.mockResolvedValue(undefined);
 			mockReadFile.mockResolvedValue(JSON.stringify({}));
-			mockReaddir.mockResolvedValue([] as any);
+			mockReaddir.mockResolvedValue([]);
 
 			await detector.detectProjectType('/test/cached');
 			detector.clearCache();

@@ -3,6 +3,7 @@ import type {
 	AnalysisContext,
 	GuidanceResult,
 	ContextAwareConfig,
+	ProjectContext,
 	AutopilotConfig,
 } from '../../types/index.js';
 import {ContextBuilder} from '../contextBuilder.js';
@@ -146,7 +147,7 @@ export class ContextAwareGuidanceSource implements GuidanceSource {
 	 */
 	private handleConfirmationDialogs(
 		terminalOutput: string,
-		projectContext: any,
+		projectContext: ProjectContext,
 	): GuidanceResult | null {
 		// Check if this looks like a confirmation dialog
 		if (!this.isConfirmationDialog(terminalOutput)) {
@@ -241,7 +242,7 @@ export class ContextAwareGuidanceSource implements GuidanceSource {
 	 */
 	private enhanceGuidance(
 		pattern: GuidancePattern,
-		projectContext: any,
+		projectContext: ProjectContext,
 	): string {
 		// Add context-specific enhancements based on pattern category
 		let enhancedGuidance = pattern.guidance;
@@ -253,11 +254,15 @@ export class ContextAwareGuidanceSource implements GuidanceSource {
 			case 'typescript-types':
 				enhancedGuidance += ` Consider using project-specific types or interfaces.`;
 				break;
-			case 'git-workflow':
-				if (projectContext.gitStatus?.hasChanges) {
-					enhancedGuidance += ` Current changes: ${projectContext.gitStatus.modifiedFiles.length} files.`;
+			case 'git-workflow': {
+				const totalChanges =
+					(projectContext.gitStatus?.filesAdded || 0) +
+					(projectContext.gitStatus?.filesDeleted || 0);
+				if (totalChanges > 0) {
+					enhancedGuidance += ` Current changes: ${totalChanges} files.`;
 				}
 				break;
+			}
 			case 'testing':
 				if (projectContext.projectType.testFramework) {
 					enhancedGuidance += ` (Using ${projectContext.projectType.testFramework})`;
@@ -273,7 +278,7 @@ export class ContextAwareGuidanceSource implements GuidanceSource {
 	 */
 	private createNoGuidanceResult(
 		reasoning: string,
-		projectContext?: any,
+		projectContext?: ProjectContext,
 	): GuidanceResult {
 		return {
 			shouldIntervene: false,
