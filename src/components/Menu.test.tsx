@@ -84,13 +84,37 @@ vi.mock('../services/configurationManager.js', () => ({
 }));
 
 // Mock LLMClient
-vi.mock('../services/llmClient.js', () => ({
-	LLMClient: {
-		hasAnyProviderKeys: vi.fn().mockReturnValue(true),
-		getAvailableProviderKeys: vi.fn().mockReturnValue(['openai', 'anthropic']),
-		isProviderAvailable: vi.fn().mockReturnValue(true),
-	},
-}));
+vi.mock('../services/llmClient.js', () => {
+	const LLMClientConstructor = vi.fn().mockImplementation(() => ({
+		isAvailable: vi.fn().mockReturnValue(true),
+		updateConfig: vi.fn(),
+		getCurrentProviderName: vi.fn().mockReturnValue('OpenAI'),
+		getSupportedModels: vi.fn().mockReturnValue(['gpt-4.1', 'o4-mini', 'o3']),
+		analyzeClaudeOutput: vi.fn().mockResolvedValue({
+			shouldIntervene: false,
+			confidence: 0.3,
+			reasoning: 'No intervention needed',
+		}),
+	}));
+
+	// Add static methods with proper typing
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(LLMClientConstructor as any).hasAnyProviderKeys = vi
+		.fn()
+		.mockReturnValue(true);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(LLMClientConstructor as any).getAvailableProviderKeys = vi
+		.fn()
+		.mockReturnValue(['openai', 'anthropic']);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(LLMClientConstructor as any).isProviderAvailable = vi
+		.fn()
+		.mockReturnValue(true);
+
+	return {
+		LLMClient: LLMClientConstructor,
+	};
+});
 
 describe('Menu component rendering', () => {
 	let sessionManager: SessionManager;
