@@ -5,7 +5,7 @@ import {LLMClient} from './llmClient.js';
 
 describe('PromptEvolverService', () => {
 	let service: PromptEvolverService;
-	let mockLLMClient: LLMClient;
+	let mockLLMClient: Partial<LLMClient>;
 
 	beforeEach(() => {
 		mockLLMClient = {
@@ -17,9 +17,9 @@ describe('PromptEvolverService', () => {
 			},
 			getApiKeyForProvider: vi.fn(() => 'test-key'),
 			createModelWithApiKey: vi.fn(() => ({model: 'mock-model'})),
-		} as any;
+		} as Partial<LLMClient>;
 
-		service = new PromptEvolverService(mockLLMClient);
+		service = new PromptEvolverService(mockLLMClient as LLMClient);
 	});
 
 	describe('evolveGuidePrompt', () => {

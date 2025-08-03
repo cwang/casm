@@ -1,16 +1,16 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest';
+import {LLMClient} from './llmClient.js';
 import {PatternLearnerService} from './patternLearner.js';
 import {
 	LearningConfig,
 	UserInputPattern,
 	LearnedPattern,
 } from '../types/index.js';
-import {LLMClient} from './llmClient.js';
 
 describe('PatternLearnerService', () => {
 	let service: PatternLearnerService;
 	let mockLearningConfig: LearningConfig;
-	let mockLLMClient: LLMClient;
+	let mockLLMClient: Partial<LLMClient>;
 
 	beforeEach(() => {
 		mockLearningConfig = {
@@ -29,9 +29,12 @@ describe('PatternLearnerService', () => {
 			},
 			getApiKeyForProvider: vi.fn(() => 'test-key'),
 			createModelWithApiKey: vi.fn(() => ({model: 'mock-model'})),
-		} as any;
+		} as Partial<LLMClient>;
 
-		service = new PatternLearnerService(mockLearningConfig, mockLLMClient);
+		service = new PatternLearnerService(
+			mockLearningConfig,
+			mockLLMClient as LLMClient,
+		);
 	});
 
 	describe('analyzePatterns', () => {

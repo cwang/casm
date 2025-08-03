@@ -1,12 +1,12 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest';
+import {LLMClient} from './llmClient.js';
 import {PatternTrackerService} from './patternTracker.js';
 import {LearningConfig} from '../types/index.js';
-import {LLMClient} from './llmClient.js';
 
 describe('PatternTrackerService', () => {
 	let service: PatternTrackerService;
 	let mockLearningConfig: LearningConfig;
-	let mockLLMClient: LLMClient;
+	let mockLLMClient: Partial<LLMClient>;
 
 	beforeEach(() => {
 		mockLearningConfig = {
@@ -23,9 +23,12 @@ describe('PatternTrackerService', () => {
 				model: 'gpt-4.1',
 				apiKeys: {openai: 'test-key'},
 			},
-		} as any;
+		} as Partial<LLMClient>;
 
-		service = new PatternTrackerService(mockLearningConfig, mockLLMClient);
+		service = new PatternTrackerService(
+			mockLearningConfig,
+			mockLLMClient as LLMClient,
+		);
 	});
 
 	describe('trackUserInput', () => {
