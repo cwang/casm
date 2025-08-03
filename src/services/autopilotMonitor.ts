@@ -204,10 +204,11 @@ export class AutopilotMonitor extends EventEmitter {
 			return;
 		}
 
-		const guidanceMessage = `✈️ Auto-pilot: ${decision.guidance}\n`;
+		console.log(`🎯 Autopilot providing guidance: "${decision.guidance}"`);
 
-		// Send guidance to the PTY
-		session.process.write(guidanceMessage);
+		// Send guidance directly as user input to Claude Code (without prefix)
+		// This allows the autopilot to actually steer Claude Code's work
+		session.process.write(decision.guidance + '\n');
 
 		// Update state
 		session.autopilotState.guidancesProvided++;

@@ -4,9 +4,9 @@
 
 CCManager's Autopilot feature requires LLM API keys to function. This guide explains how to set up and manage these keys using CCManager's built-in configuration system.
 
-## Why CCManager Config Storage?
+## Configuration Approach
 
-CCManager stores API keys in its own configuration file, providing a seamless user experience:
+CCManager stores API keys exclusively in its own configuration file, providing a seamless user experience:
 
 ### User Experience Benefits ✅
 - **Integrated configuration**: Manage all Autopilot settings in one place
@@ -20,19 +20,6 @@ CCManager stores API keys in its own configuration file, providing a seamless us
 - **UI-driven setup**: Visual interface for key management
 - **Immediate feedback**: Real-time validation of API key availability
 - **Platform agnostic**: Works consistently across different operating systems
-
-## Fallback: Environment Variables
-
-CCManager also supports environment variables as a fallback option for users who prefer that approach:
-
-### When Environment Variables Are Used
-- If no API key is configured in CCManager's config file
-- CCManager will automatically check for `OPENAI_API_KEY` and `ANTHROPIC_API_KEY`
-- Provides backward compatibility with existing setups
-
-### Priority Order
-1. **First priority**: API keys from CCManager config file
-2. **Fallback**: Environment variables if config keys are not set
 
 ## Setting Up API Keys
 
@@ -73,19 +60,6 @@ You can also edit the configuration file directly:
 - **macOS/Linux**: `~/.config/ccmanager/config.json`
 - **Windows**: `%APPDATA%/ccmanager/config.json`
 
-### Method 3: Environment Variables (Fallback)
-
-For users who prefer environment variables:
-
-```bash
-# Set for current session
-export OPENAI_API_KEY="your-openai-key-here"
-export ANTHROPIC_API_KEY="your-anthropic-key-here"
-
-# Make persistent (add to ~/.bashrc, ~/.zshrc, etc.)
-echo 'export OPENAI_API_KEY="your-openai-key-here"' >> ~/.bashrc
-echo 'export ANTHROPIC_API_KEY="your-anthropic-key-here"' >> ~/.bashrc
-```
 
 ## Obtaining API Keys
 
@@ -220,16 +194,7 @@ curl -H "x-api-key: your-key-here" \
      https://api.anthropic.com/v1/messages
 ```
 
-## Migration from Environment Variables
-
-If you previously used environment variables:
-
-1. **Open CCManager** and navigate to Autopilot configuration
-2. **Enter your keys** through the UI (CCManager will automatically use these instead of environment variables)
-3. **Optional**: Remove environment variables from your shell configuration if desired
-
-CCManager will continue to work with environment variables as a fallback, so migration is optional.
 
 ## Summary
 
-CCManager's config-based API key storage provides an integrated, user-friendly approach to managing LLM credentials. The built-in UI makes setup straightforward, while environment variable fallback ensures compatibility with existing workflows. Choose the method that best fits your security requirements and workflow preferences.
+CCManager's config-based API key storage provides an integrated, user-friendly approach to managing LLM credentials. The built-in UI makes setup straightforward and all configuration is stored securely in CCManager's configuration file.

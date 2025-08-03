@@ -160,7 +160,7 @@ describe('AutopilotMonitor', () => {
 			await (autopilotMonitor as any).analyzeSession(mockSession);
 
 			expect(mockSession.process.write).toHaveBeenCalledWith(
-				'✈️ Auto-pilot: Try a different approach\n',
+				'Try a different approach\n',
 			);
 			expect(mockSession.autopilotState?.guidancesProvided).toBe(1);
 		});

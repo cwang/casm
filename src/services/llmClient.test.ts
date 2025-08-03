@@ -81,14 +81,14 @@ describe('LLMClient', () => {
 			expect(anthropicClient.isAvailable()).toBe(true);
 		});
 
-		it('should fallback to environment variables when config key not available', () => {
-			// Config without API keys, but env vars are set
+		it('should return false when config key not available (no environment fallback)', () => {
+			// Config without API keys - should not fallback to env vars
 			const configWithoutKeys = {
 				...mockConfig,
 				apiKeys: {},
 			};
 			const client = new LLMClient(configWithoutKeys);
-			expect(client.isAvailable()).toBe(true); // Should use env var
+			expect(client.isAvailable()).toBe(false); // No environment variable fallback
 		});
 	});
 
@@ -210,7 +210,7 @@ describe('LLMClient', () => {
 
 			expect(result.shouldIntervene).toBe(false);
 			expect(result.confidence).toBe(0);
-			expect(result.reasoning).toContain('API key not available');
+			expect(result.reasoning).toContain('API key not configured');
 
 			// Restore environment variables for other tests
 			process.env['OPENAI_API_KEY'] = 'test-openai-key';
@@ -284,10 +284,10 @@ describe('LLMClient', () => {
 			process.env['ANTHROPIC_API_KEY'] = 'test-anthropic-key';
 		});
 
-		it('should fallback to environment variables when no config provided', () => {
-			// Environment variables are already set in beforeEach
-			expect(LLMClient.isProviderAvailable('openai')).toBe(true);
-			expect(LLMClient.isProviderAvailable('anthropic')).toBe(true);
+		it('should return false when no config provided (no environment fallback)', () => {
+			// No config provided - should not use environment variables
+			expect(LLMClient.isProviderAvailable('openai')).toBe(false);
+			expect(LLMClient.isProviderAvailable('anthropic')).toBe(false);
 		});
 
 		it('should get available provider keys from config', () => {

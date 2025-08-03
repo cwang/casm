@@ -1,9 +1,8 @@
-import React, {useEffect, useState, useRef} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useStdout} from 'ink';
 import {Session as SessionType} from '../types/index.js';
 import {SessionManager} from '../services/sessionManager.js';
 import {shortcutManager} from '../services/shortcutManager.js';
-import {AutopilotMonitor} from '../services/autopilotMonitor.js';
 import {configurationManager} from '../services/configurationManager.js';
 
 interface SessionProps {
@@ -21,13 +20,16 @@ const Session: React.FC<SessionProps> = ({
 	const [isExiting, setIsExiting] = useState(false);
 	const [, setAutopilotStatus] = useState<string>('STANDBY');
 	const [, setGuidancesProvided] = useState(0);
-	const autopilotMonitorRef = useRef<AutopilotMonitor | null>(null);
 
 	useEffect(() => {
 		if (!stdout) return;
 
 		// Clear screen when entering session
 		stdout.write('\x1B[2J\x1B[H');
+
+		// Show help text at the bottom
+		const helpText = `\n? Press ${shortcutManager.getShortcutDisplay('returnToMenu')} to return to menu\n`;
+		stdout.write(helpText);
 
 		// Handle session restoration
 		const handleSessionRestore = (restoredSession: SessionType) => {
@@ -61,11 +63,6 @@ const Session: React.FC<SessionProps> = ({
 		// Mark session as active (this will trigger the restore event)
 		sessionManager.setSessionActive(session.worktreePath, true);
 
-		// Initialize auto-pilot monitor
-		const autopilotConfig = configurationManager.getAutopilotConfig();
-		const autopilotMonitor = new AutopilotMonitor(autopilotConfig);
-		autopilotMonitorRef.current = autopilotMonitor;
-
 		// Initialize autopilot state if needed
 		if (!session.autopilotState) {
 			session.autopilotState = {
@@ -75,14 +72,12 @@ const Session: React.FC<SessionProps> = ({
 			};
 		}
 
-		// Auto-enable autopilot if enabled globally and LLM is available
-		if (
-			autopilotConfig.enabled &&
-			autopilotMonitor.isLLMAvailable() &&
-			!session.autopilotState.isActive
-		) {
-			autopilotMonitor.enable(session);
-			if (stdout) {
+		// Auto-enable autopilot if enabled globally
+		const autopilotConfig = configurationManager.getAutopilotConfig();
+		if (autopilotConfig.enabled && !session.autopilotState.isActive) {
+			// Use the global autopilot through SessionManager
+			sessionManager.setAutopilotForAllSessions(true);
+			if (stdout && session.autopilotState.isActive) {
 				stdout.write('\n✈️ Auto-pilot: ACTIVE (globally enabled)\n');
 			}
 		}
@@ -90,45 +85,6 @@ const Session: React.FC<SessionProps> = ({
 		// Update initial state
 		setAutopilotStatus(session.autopilotState.isActive ? 'ACTIVE' : 'STANDBY');
 		setGuidancesProvided(session.autopilotState.guidancesProvided);
-
-		// Auto-pilot event handlers
-		const handleAutopilotStatusChange = (
-			changedSession: SessionType,
-			status: string,
-		) => {
-			if (changedSession.id === session.id) {
-				setAutopilotStatus(status);
-			}
-		};
-
-		const handleGuidanceProvided = (changedSession: SessionType) => {
-			if (changedSession.id === session.id && changedSession.autopilotState) {
-				setGuidancesProvided(changedSession.autopilotState.guidancesProvided);
-			}
-		};
-
-		autopilotMonitor.on('statusChanged', handleAutopilotStatusChange);
-		autopilotMonitor.on('guidanceProvided', handleGuidanceProvided);
-
-		// Connect autopilot to session state changes for intelligent triggering
-		const handleSessionStateChange = (
-			changedSession: SessionType,
-			oldState: string,
-			newState: string,
-		) => {
-			if (changedSession.id === session.id && autopilotMonitorRef.current) {
-				console.log(
-					`🔄 Session state change detected: ${oldState} → ${newState}`,
-				);
-				autopilotMonitorRef.current.onSessionStateChanged(
-					changedSession,
-					oldState,
-					newState,
-				);
-			}
-		};
-
-		sessionManager.on('sessionStateChanged', handleSessionStateChange);
 
 		// Immediately resize the PTY and terminal to current dimensions
 		// This fixes rendering issues when terminal width changed while in menu
@@ -194,19 +150,17 @@ const Session: React.FC<SessionProps> = ({
 			if (isExiting) return;
 
 			// Check for auto-pilot toggle
-			if (data === 'p' && autopilotMonitorRef.current) {
-				const monitor = autopilotMonitorRef.current;
-				if (monitor.isLLMAvailable()) {
-					const isActive = monitor.toggle(session);
-					const status = isActive ? 'ACTIVE' : 'STANDBY';
-					setAutopilotStatus(status);
-					// Display status message in terminal (not sent to Claude Code)
-					if (stdout) {
+			if (data === 'p') {
+				// Toggle autopilot for this session via SessionManager
+				const newState = sessionManager.toggleAutopilotForSession(session.id);
+				const status = newState ? 'ACTIVE' : 'STANDBY';
+				setAutopilotStatus(status);
+
+				// Display status message in terminal (not sent to Claude Code)
+				if (stdout) {
+					if (newState || session.autopilotState) {
 						stdout.write(`\n✈️ Auto-pilot: ${status}\n`);
-					}
-				} else {
-					// Show message that API key is needed
-					if (stdout) {
+					} else {
 						stdout.write(
 							'\n✈️ Auto-pilot: API key required (configure in settings)\n',
 						);
@@ -258,18 +212,7 @@ const Session: React.FC<SessionProps> = ({
 				}
 			}
 
-			// Cleanup auto-pilot monitor
-			if (autopilotMonitorRef.current) {
-				autopilotMonitorRef.current.disable(session);
-				autopilotMonitorRef.current.destroy();
-				autopilotMonitorRef.current = null;
-			}
-
-			// Remove session state change listener
-			sessionManager.removeListener(
-				'sessionStateChanged',
-				handleSessionStateChange,
-			);
+			// Note: Global autopilot monitor is managed by SessionManager, no cleanup needed here
 
 			// Mark session as inactive
 			sessionManager.setSessionActive(session.worktreePath, false);

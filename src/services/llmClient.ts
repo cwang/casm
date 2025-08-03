@@ -9,7 +9,6 @@ interface ProviderInfo {
 	name: string;
 	models: string[];
 	createModel: (modelName: string) => LanguageModel;
-	requiresKey: string;
 }
 
 const PROVIDERS: Record<SupportedProvider, ProviderInfo> = {
@@ -20,7 +19,6 @@ const PROVIDERS: Record<SupportedProvider, ProviderInfo> = {
 			const provider = createOpenAI();
 			return provider(model);
 		},
-		requiresKey: 'OPENAI_API_KEY',
 	},
 	anthropic: {
 		name: 'Anthropic',
@@ -29,7 +27,6 @@ const PROVIDERS: Record<SupportedProvider, ProviderInfo> = {
 			const provider = createAnthropic();
 			return provider(model);
 		},
-		requiresKey: 'ANTHROPIC_API_KEY',
 	},
 };
 
@@ -55,12 +52,8 @@ export class LLMClient {
 	private getApiKeyForProvider(
 		provider: SupportedProvider,
 	): string | undefined {
-		// First check config, then fall back to environment variables for backward compatibility
-		const configKey = this.config.apiKeys?.[provider];
-		if (configKey) return configKey;
-
-		const envKey = process.env[PROVIDERS[provider].requiresKey];
-		return envKey;
+		// Only use API keys from config - no environment variable fallback
+		return this.config.apiKeys?.[provider];
 	}
 
 	private createModelWithApiKey(
@@ -95,13 +88,8 @@ export class LLMClient {
 		const providerInfo = PROVIDERS[provider];
 		if (!providerInfo) return false;
 
-		// First check config if provided, then fall back to environment variables
-		if (config?.apiKeys?.[provider]) {
-			return Boolean(config.apiKeys[provider]);
-		}
-
-		const apiKey = process.env[providerInfo.requiresKey];
-		return Boolean(apiKey);
+		// Only check config - no environment variable fallback
+		return Boolean(config?.apiKeys?.[provider]);
 	}
 
 	static getAvailableProviderKeys(
@@ -134,7 +122,7 @@ export class LLMClient {
 			return {
 				shouldIntervene: false,
 				confidence: 0,
-				reasoning: `${provider?.name ?? 'Provider'} API key not available (${provider?.requiresKey})`,
+				reasoning: `${provider?.name ?? 'Provider'} API key not configured`,
 			};
 		}
 
@@ -242,7 +230,7 @@ Guidelines:
 		return Object.entries(PROVIDERS).map(([_key, provider]) => ({
 			name: provider.name,
 			models: provider.models,
-			available: Boolean(process.env[provider.requiresKey]),
+			available: false, // No environment variables - must be configured via UI
 		}));
 	}
 

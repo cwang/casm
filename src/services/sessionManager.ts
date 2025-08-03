@@ -28,6 +28,7 @@ export class SessionManager extends EventEmitter implements ISessionManager {
 	sessions: Map<string, Session>;
 	private waitingWithBottomBorder: Map<string, boolean> = new Map();
 	private busyTimers: Map<string, NodeJS.Timeout> = new Map();
+	private globalAutopilotMonitor: AutopilotMonitor | null = null;
 
 	private async spawn(
 		command: string,
@@ -55,6 +56,34 @@ export class SessionManager extends EventEmitter implements ISessionManager {
 	constructor() {
 		super();
 		this.sessions = new Map();
+
+		// Initialize global autopilot monitor
+		this.initializeGlobalAutopilot();
+	}
+
+	private initializeGlobalAutopilot(): void {
+		const autopilotConfig = configurationManager.getAutopilotConfig();
+		if (autopilotConfig) {
+			this.globalAutopilotMonitor = new AutopilotMonitor(autopilotConfig);
+
+			// Set up global listener for all session state changes
+			this.on(
+				'sessionStateChanged',
+				(session: Session, oldState: string, newState: string) => {
+					// Only analyze sessions that have autopilot enabled
+					if (session.autopilotState?.isActive && this.globalAutopilotMonitor) {
+						console.log(
+							`🌐 Global autopilot monitoring session ${session.id}: ${oldState} → ${newState}`,
+						);
+						this.globalAutopilotMonitor.onSessionStateChanged(
+							session,
+							oldState,
+							newState,
+						);
+					}
+				},
+			);
+		}
 	}
 
 	private createSessionId(): string {
@@ -467,15 +496,60 @@ export class SessionManager extends EventEmitter implements ISessionManager {
 	}
 
 	/**
+	 * Toggle autopilot for a specific session
+	 */
+	toggleAutopilotForSession(sessionId: string): boolean {
+		if (!this.globalAutopilotMonitor) {
+			console.warn('Global autopilot monitor not initialized');
+			return false;
+		}
+
+		const session = Array.from(this.sessions.values()).find(
+			s => s.id === sessionId,
+		);
+		if (!session) {
+			console.warn(`Session ${sessionId} not found`);
+			return false;
+		}
+
+		// Initialize autopilot state if needed
+		if (!session.autopilotState) {
+			session.autopilotState = {
+				isActive: false,
+				guidancesProvided: 0,
+				analysisInProgress: false,
+			};
+		}
+
+		const newState = !session.autopilotState.isActive;
+
+		if (newState) {
+			// Enable autopilot for this session
+			if (this.globalAutopilotMonitor.isLLMAvailable()) {
+				this.globalAutopilotMonitor.enable(session);
+				console.log(`✅ Enabled autopilot for session ${session.id}`);
+			} else {
+				console.log(
+					`❌ Cannot enable autopilot for session ${session.id} - LLM not available`,
+				);
+				return false;
+			}
+		} else {
+			// Disable autopilot for this session
+			this.globalAutopilotMonitor.disable(session);
+			console.log(`❌ Disabled autopilot for session ${session.id}`);
+		}
+
+		return newState;
+	}
+
+	/**
 	 * Enable or disable autopilot for all existing sessions
 	 * This is used when the global autopilot switch is toggled
 	 */
 	setAutopilotForAllSessions(enabled: boolean): void {
-		const autopilotConfig = configurationManager.getAutopilotConfig();
-		if (!autopilotConfig) {
-			console.warn(
-				'No autopilot config found, cannot enable autopilot for sessions',
-			);
+		if (!this.globalAutopilotMonitor) {
+			console.warn('Global autopilot monitor not initialized');
 			return;
 		}
 
@@ -497,10 +571,8 @@ export class SessionManager extends EventEmitter implements ISessionManager {
 			if (enabled) {
 				// Enable autopilot for this session if not already active
 				if (!session.autopilotState.isActive) {
-					const autopilotMonitor = new AutopilotMonitor(autopilotConfig);
-
-					if (autopilotMonitor.isLLMAvailable()) {
-						autopilotMonitor.enable(session);
+					if (this.globalAutopilotMonitor!.isLLMAvailable()) {
+						this.globalAutopilotMonitor!.enable(session);
 						console.log(
 							`✅ Enabled autopilot for session ${session.id} (${session.worktreePath})`,
 						);
@@ -513,8 +585,7 @@ export class SessionManager extends EventEmitter implements ISessionManager {
 			} else {
 				// Disable autopilot for this session if currently active
 				if (session.autopilotState.isActive) {
-					const autopilotMonitor = new AutopilotMonitor(autopilotConfig);
-					autopilotMonitor.disable(session);
+					this.globalAutopilotMonitor!.disable(session);
 					console.log(
 						`❌ Disabled autopilot for session ${session.id} (${session.worktreePath})`,
 					);
