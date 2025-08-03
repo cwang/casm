@@ -101,6 +101,12 @@ export class ConfigurationManager {
 				maxGuidancesPerHour: 3,
 				analysisDelayMs: 3000,
 				interventionThreshold: 0.5,
+				learningConfig: {
+					enabled: false,
+					approvalRequired: true,
+					retentionDays: 30,
+					minPatternConfidence: 0.7,
+				},
 				apiKeys: {},
 				patterns: {
 					enabled: true,
@@ -124,6 +130,16 @@ export class ConfigurationManager {
 			this.config.autopilot.patterns = {
 				enabled: true,
 				...PatternLibrary.getDefaultConfig(),
+			};
+		}
+
+		// Ensure learning config exists for existing autopilot configs
+		if (!this.config.autopilot.learningConfig) {
+			this.config.autopilot.learningConfig = {
+				enabled: false,
+				approvalRequired: true,
+				retentionDays: 30,
+				minPatternConfidence: 0.7,
 			};
 		}
 	}
@@ -349,7 +365,17 @@ export class ConfigurationManager {
 				maxGuidancesPerHour: 3,
 				analysisDelayMs: 3000,
 				interventionThreshold: 0.5, // Default moderate threshold
+				learningConfig: {
+					enabled: false,
+					approvalRequired: true,
+					retentionDays: 30,
+					minPatternConfidence: 0.7,
+				},
 				apiKeys: {},
+				patterns: {
+					enabled: true,
+					...PatternLibrary.getDefaultConfig(),
+				},
 			}
 		);
 	}
