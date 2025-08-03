@@ -4,7 +4,7 @@ import type {
 	GuidanceResult,
 	AutopilotConfig,
 } from '../../types/index.js';
-import {BaseLLMGuidanceSource} from './baseLLMGuidanceSource.js';
+import {GuidePromptGuidanceSource} from './guidePromptGuidanceSource.js';
 import {PatternGuidanceSource} from './patternGuidanceSource.js';
 import {ContextGuidanceSource} from './contextGuidanceSource.js';
 
@@ -25,8 +25,8 @@ export class GuidanceOrchestrator {
 		// Initialize with context-aware source (medium priority - runs second)
 		this.addSource(new ContextGuidanceSource(config));
 
-		// Initialize with base LLM source (lowest priority - runs last)
-		this.addSource(new BaseLLMGuidanceSource(config));
+		// Initialize with guide prompt source (lowest priority - runs last)
+		this.addSource(new GuidePromptGuidanceSource(config));
 	}
 
 	/**
@@ -49,7 +49,7 @@ export class GuidanceOrchestrator {
 	removeSource(sourceId: string): boolean {
 		const removed = this.sources.delete(sourceId);
 		if (removed) {
-			console.log(`🔌 Removed guidance source: ${sourceId}`);
+			console.log(`🔌 Orchestrator removed source: ${sourceId}`);
 		}
 		return removed;
 	}
@@ -68,7 +68,7 @@ export class GuidanceOrchestrator {
 		const availableSources = Array.from(this.sources.values());
 
 		if (availableSources.length === 0) {
-			console.log('⚠️ No guidance sources available');
+			console.log('⚠️ Orchestrator: no guidance sources available');
 			return this.createNoGuidanceResult('No guidance sources available');
 		}
 
@@ -78,7 +78,7 @@ export class GuidanceOrchestrator {
 		);
 
 		console.log(
-			`🎯 Running ${sortedSources.length} guidance sources in priority order`,
+			`🎯 Orchestrator analyzing: ${sortedSources.length} sources in priority order`,
 		);
 
 		const results: GuidanceResult[] = [];
@@ -87,7 +87,7 @@ export class GuidanceOrchestrator {
 		for (const source of sortedSources) {
 			try {
 				console.log(
-					`🔍 Analyzing with source: ${source.id} (priority: ${source.priority})`,
+					`🔍 Orchestrator analyzing source: ${source.id} (priority: ${source.priority})`,
 				);
 				const startTime = Date.now();
 
@@ -95,7 +95,7 @@ export class GuidanceOrchestrator {
 				const duration = Date.now() - startTime;
 
 				console.log(
-					`✅ Source ${source.id} completed in ${duration}ms: shouldIntervene=${result.shouldIntervene}, confidence=${result.confidence}`,
+					`✅ Orchestrator source completed: ${source.id} in ${duration.toFixed(1)}ms, shouldIntervene=${result.shouldIntervene}, confidence=${result.confidence}`,
 				);
 
 				results.push(result);
@@ -107,12 +107,12 @@ export class GuidanceOrchestrator {
 					source.canShortCircuit
 				) {
 					console.log(
-						`⚡ Short-circuiting at source ${source.id} (high confidence: ${result.confidence})`,
+						`⚡ Orchestrator short-circuiting: ${source.id} (high confidence: ${result.confidence})`,
 					);
 					return this.composeResponse(results, result);
 				}
 			} catch (error) {
-				console.log(`❌ Error in guidance source ${source.id}:`, error);
+				console.log(`❌ Orchestrator source error: ${source.id}:`, error);
 
 				// Add error result but continue with other sources
 				results.push({
@@ -134,13 +134,15 @@ export class GuidanceOrchestrator {
 	 * Compose the final response from all guidance results
 	 */
 	private composeFinalResponse(results: GuidanceResult[]): GuidanceResult {
-		console.log(`🎭 Composing final response from ${results.length} results`);
+		console.log(
+			`🎭 Orchestrator composing response: ${results.length} results`,
+		);
 
 		// Filter out error results for composition
 		const validResults = results.filter(r => !r.metadata?.['error']);
 
 		if (validResults.length === 0) {
-			console.log('⚠️ No valid guidance results available');
+			console.log('⚠️ Orchestrator: no valid guidance results available');
 			return this.createNoGuidanceResult('All guidance sources failed');
 		}
 
@@ -148,7 +150,9 @@ export class GuidanceOrchestrator {
 		const interventionResults = validResults.filter(r => r.shouldIntervene);
 
 		if (interventionResults.length === 0) {
-			console.log('ℹ️ No guidance sources recommend intervention');
+			console.log(
+				'ℹ️ Orchestrator: no guidance sources recommend intervention',
+			);
 			return this.createNoGuidanceResult('No intervention recommended');
 		}
 
@@ -230,13 +234,15 @@ export class GuidanceOrchestrator {
 			contextSource.updateConfig(config);
 		}
 
-		// Update base LLM source if it exists
-		const baseLLMSource = this.sources.get('base-llm') as BaseLLMGuidanceSource;
-		if (baseLLMSource) {
-			baseLLMSource.updateConfig(config);
+		// Update guide prompt source if it exists
+		const guidePromptSource = this.sources.get(
+			'guide-prompt',
+		) as GuidePromptGuidanceSource;
+		if (guidePromptSource) {
+			guidePromptSource.updateConfig(config);
 		}
 
-		console.log('🔄 Updated configuration for guidance orchestrator');
+		console.log('🔄 Orchestrator: configuration updated');
 	}
 
 	/**
@@ -249,9 +255,11 @@ export class GuidanceOrchestrator {
 			return true;
 		}
 
-		// Fallback to LLM source availability
-		const baseLLMSource = this.sources.get('base-llm') as BaseLLMGuidanceSource;
-		return baseLLMSource ? baseLLMSource.isAvailable() : false;
+		// Fallback to guide prompt source availability
+		const guidePromptSource = this.sources.get(
+			'guide-prompt',
+		) as GuidePromptGuidanceSource;
+		return guidePromptSource ? guidePromptSource.isAvailable() : false;
 	}
 
 	/**

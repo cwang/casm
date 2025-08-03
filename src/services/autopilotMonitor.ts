@@ -268,7 +268,13 @@ export class AutopilotMonitor extends EventEmitter {
 
 		// Send guidance directly as user input to Claude Code (without prefix)
 		// This allows the autopilot to actually steer Claude Code's work
-		session.process.write(decision.guidance + '\n');
+		try {
+			session.process.write(decision.guidance + '\n');
+			console.log(`✅ Guidance successfully written to PTY`);
+		} catch (error) {
+			console.error(`❌ Failed to write guidance to PTY:`, error);
+			return; // Don't update state if write failed
+		}
 
 		// Update state
 		session.autopilotState.guidancesProvided++;

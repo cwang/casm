@@ -98,7 +98,7 @@ export class ConfigurationManager {
 				enabled: false,
 				provider: 'openai',
 				model: 'gpt-4.1',
-				maxGuidancesPerHour: 3,
+				maxGuidancesPerHour: 20,
 				analysisDelayMs: 3000,
 				interventionThreshold: 0.5,
 				learningConfig: {

@@ -7,11 +7,11 @@ import type {
 import {LLMClient} from '../llmClient.js';
 
 /**
- * Base LLM Guidance Source - wraps existing LLMClient functionality
- * This is the foundation guidance source that provides general LLM-based analysis
+ * Guide Prompt Guidance Source - uses custom user guide prompt for LLM analysis
+ * This guidance source applies the user's custom guide prompt to analyze Claude Code sessions
  */
-export class BaseLLMGuidanceSource implements GuidanceSource {
-	public readonly id = 'base-llm';
+export class GuidePromptGuidanceSource implements GuidanceSource {
+	public readonly id = 'guide-prompt';
 	public readonly priority = 100; // Lowest priority - fallback option
 	public readonly canShortCircuit = false; // General analysis doesn't short-circuit
 
@@ -19,15 +19,29 @@ export class BaseLLMGuidanceSource implements GuidanceSource {
 
 	constructor(config: AutopilotConfig) {
 		this.llmClient = new LLMClient(config);
+		const provider = this.llmClient.getCurrentProviderName();
+		console.log(`🔌 GuidePromptGuidance initialized: ${provider} provider`);
 	}
 
 	async analyze(context: AnalysisContext): Promise<GuidanceResult> {
+		const startTime = Date.now();
 		try {
 			// Use existing LLMClient logic
 			const decision = await this.llmClient.analyzeClaudeOutput(
 				context.terminalOutput,
 				context.projectPath,
 			);
+			const duration = Date.now() - startTime;
+
+			if (decision.shouldIntervene) {
+				console.log(
+					`⚡ GuidePromptGuidance analysis completed: ${duration.toFixed(1)}ms, providing guidance (confidence: ${decision.confidence})`,
+				);
+			} else {
+				console.log(
+					`⚡ GuidePromptGuidance analysis completed: ${duration.toFixed(1)}ms, no intervention needed (confidence: ${decision.confidence})`,
+				);
+			}
 
 			// Convert AutopilotDecision to GuidanceResult
 			return {
@@ -43,6 +57,11 @@ export class BaseLLMGuidanceSource implements GuidanceSource {
 				},
 			};
 		} catch (error) {
+			const duration = Date.now() - startTime;
+			console.log(
+				`❌ GuidePromptGuidance analysis failed: ${duration.toFixed(1)}ms, ${error instanceof Error ? error.message : String(error)}`,
+			);
+
 			// Return safe fallback result on error
 			return {
 				shouldIntervene: false,
@@ -63,6 +82,8 @@ export class BaseLLMGuidanceSource implements GuidanceSource {
 	 */
 	updateConfig(config: AutopilotConfig): void {
 		this.llmClient.updateConfig(config);
+		const provider = this.llmClient.getCurrentProviderName();
+		console.log(`🔄 GuidePromptGuidance config updated: ${provider} provider`);
 	}
 
 	/**

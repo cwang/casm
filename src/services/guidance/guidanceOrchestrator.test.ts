@@ -7,17 +7,17 @@ import type {
 	GuidanceSource,
 } from '../../types/index.js';
 
-// Mock BaseLLMGuidanceSource
-vi.mock('./baseLLMGuidanceSource.js', () => ({
-	BaseLLMGuidanceSource: vi.fn().mockImplementation(() => ({
-		id: 'base-llm',
+// Mock GuidePromptGuidanceSource
+vi.mock('./guidePromptGuidanceSource.js', () => ({
+	GuidePromptGuidanceSource: vi.fn().mockImplementation(() => ({
+		id: 'guide-prompt',
 		priority: 100,
 		canShortCircuit: false,
 		analyze: vi.fn().mockResolvedValue({
 			shouldIntervene: false,
 			confidence: 0.3,
 			reasoning: 'No intervention needed',
-			source: 'base-llm',
+			source: 'guide-prompt',
 			priority: 100,
 		}),
 		updateConfig: vi.fn(),
@@ -60,7 +60,7 @@ describe('GuidanceOrchestrator', () => {
 	describe('constructor', () => {
 		it('should initialize with pattern, context-aware, and LLM sources', () => {
 			const sourceIds = orchestrator.getSourceIds();
-			expect(sourceIds).toContain('base-llm');
+			expect(sourceIds).toContain('guide-prompt');
 			expect(sourceIds).toContain('pattern-detection');
 			expect(sourceIds).toContain('context-aware');
 			expect(sourceIds).toHaveLength(3);
@@ -114,7 +114,7 @@ describe('GuidanceOrchestrator', () => {
 
 	describe('removeSource', () => {
 		it('should remove an existing source', () => {
-			const result = orchestrator.removeSource('base-llm');
+			const result = orchestrator.removeSource('guide-prompt');
 			expect(result).toBe(true);
 			expect(orchestrator.getSourceIds()).toHaveLength(2);
 		});
@@ -127,7 +127,7 @@ describe('GuidanceOrchestrator', () => {
 
 	describe('generateGuidance', () => {
 		it('should return no guidance when no sources available', async () => {
-			orchestrator.removeSource('base-llm');
+			orchestrator.removeSource('guide-prompt');
 			orchestrator.removeSource('pattern-detection');
 			orchestrator.removeSource('context-aware');
 
@@ -298,12 +298,14 @@ describe('GuidanceOrchestrator', () => {
 				provider: 'anthropic' as const,
 			};
 
-			// Get the base LLM source
-			const baseLLMSource = (orchestrator as any).sources.get('base-llm');
+			// Get the guide prompt source
+			const guidePromptSource = (orchestrator as any).sources.get(
+				'guide-prompt',
+			);
 
 			orchestrator.updateConfig(newConfig);
 
-			expect(baseLLMSource.updateConfig).toHaveBeenCalledWith(newConfig);
+			expect(guidePromptSource.updateConfig).toHaveBeenCalledWith(newConfig);
 		});
 	});
 
@@ -314,7 +316,7 @@ describe('GuidanceOrchestrator', () => {
 		});
 
 		it('should return false when no sources available', () => {
-			orchestrator.removeSource('base-llm');
+			orchestrator.removeSource('guide-prompt');
 			orchestrator.removeSource('pattern-detection');
 
 			expect(orchestrator.isAvailable()).toBe(false);
@@ -334,13 +336,12 @@ describe('GuidanceOrchestrator', () => {
 						canShortCircuit: true,
 					},
 					{
-						id: 'context-aware',
-						priority: 1,
-						canShortCircuit: true,
-					},
-					{
-						id: 'base-llm',
-						priority: 100,
+					id: 'context-aware',
+					priority: 1,
+					canShortCircuit: true,
+				},
+				{
+					id: 'guide-prompt',						priority: 100,
 						canShortCircuit: false,
 					},
 				],
