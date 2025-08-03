@@ -181,7 +181,7 @@ describe('LLMClient', () => {
 
 			expect(result.shouldIntervene).toBe(false);
 			expect(result.confidence).toBe(0);
-			expect(result.reasoning).toContain('Analysis failed');
+			expect(result.reasoning).toContain('Unexpected OpenAI API error');
 		});
 
 		it('should handle invalid JSON responses', async () => {
@@ -193,7 +193,7 @@ describe('LLMClient', () => {
 
 			expect(result.shouldIntervene).toBe(false);
 			expect(result.confidence).toBe(0);
-			expect(result.reasoning).toContain('Analysis failed');
+			expect(result.reasoning).toContain('LLM response parsing error');
 		});
 
 		it('should return no intervention when API key is not available', async () => {

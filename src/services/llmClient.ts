@@ -156,6 +156,10 @@ export class LLMClient {
 				};
 			}
 
+			console.log(
+				`🔌 Calling ${provider.name} API with model: ${this.config.model}`,
+			);
+
 			const model = this.createModelWithApiKey(
 				this.config.provider,
 				this.config.model,
@@ -169,8 +173,23 @@ export class LLMClient {
 				temperature: 0.3,
 			});
 
+			console.log(
+				`✅ ${provider.name} API call successful, response length: ${text.length} chars`,
+			);
+
 			// Parse JSON response
-			const decision = JSON.parse(text) as AutopilotDecision;
+			let decision: AutopilotDecision;
+			try {
+				decision = JSON.parse(text) as AutopilotDecision;
+			} catch (parseError) {
+				console.error(
+					`❌ JSON parsing failed for ${provider.name} response:`,
+					text.substring(0, 200) + '...',
+				);
+				throw new Error(
+					`JSON parsing failed: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+				);
+			}
 
 			// Validate response structure
 			if (
@@ -178,15 +197,62 @@ export class LLMClient {
 				typeof decision.confidence !== 'number' ||
 				typeof decision.reasoning !== 'string'
 			) {
-				throw new Error('Invalid response structure');
+				console.error(
+					`❌ Invalid response structure from ${provider.name}:`,
+					decision,
+				);
+				throw new Error('Invalid response structure from LLM');
 			}
 
+			console.log(
+				`🤖 ${provider.name} analysis: shouldIntervene=${decision.shouldIntervene}, confidence=${decision.confidence}`,
+			);
 			return decision;
 		} catch (error) {
+			// Enhanced error logging and categorization
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			console.error(
+				`❌ LLM API call failed for ${provider.name}:`,
+				errorMessage,
+			);
+
+			// Categorize different types of errors for better debugging
+			let reasoning: string;
+			if (errorMessage.includes('JSON parsing failed')) {
+				reasoning = `LLM response parsing error: ${errorMessage}`;
+			} else if (errorMessage.includes('Invalid response structure')) {
+				reasoning = `LLM returned invalid response format: ${errorMessage}`;
+			} else if (
+				errorMessage.includes('fetch') ||
+				errorMessage.includes('network') ||
+				errorMessage.includes('timeout')
+			) {
+				reasoning = `Network error calling ${provider.name} API: ${errorMessage}`;
+			} else if (
+				errorMessage.includes('401') ||
+				errorMessage.includes('unauthorized') ||
+				errorMessage.includes('API key')
+			) {
+				reasoning = `Authentication error with ${provider.name}: ${errorMessage}`;
+			} else if (
+				errorMessage.includes('429') ||
+				errorMessage.includes('rate limit')
+			) {
+				reasoning = `Rate limit exceeded for ${provider.name}: ${errorMessage}`;
+			} else if (
+				errorMessage.includes('400') ||
+				errorMessage.includes('bad request')
+			) {
+				reasoning = `Bad request to ${provider.name} API: ${errorMessage}`;
+			} else {
+				reasoning = `Unexpected ${provider.name} API error: ${errorMessage}`;
+			}
+
 			return {
 				shouldIntervene: false,
 				confidence: 0,
-				reasoning: `Analysis failed: ${error instanceof Error ? error.message : String(error)}`,
+				reasoning,
 			};
 		}
 	}

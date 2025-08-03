@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {describe, it, expect, beforeEach, vi, afterEach} from 'vitest';
-import {BaseLLMGuidanceSource} from './baseLLMGuidanceSource.js';
+import {GuidePromptGuidanceSource} from './guidePromptGuidanceSource.js';
 import type {AutopilotConfig, AnalysisContext} from '../../types/index.js';
 
 // Mock LLMClient
@@ -19,8 +19,8 @@ vi.mock('../llmClient.js', () => ({
 	})),
 }));
 
-describe('BaseLLMGuidanceSource', () => {
-	let guidanceSource: BaseLLMGuidanceSource;
+describe('GuidePromptGuidanceSource', () => {
+	let guidanceSource: GuidePromptGuidanceSource;
 	let config: AutopilotConfig;
 	let context: AnalysisContext;
 
@@ -37,7 +37,7 @@ describe('BaseLLMGuidanceSource', () => {
 			},
 		};
 
-		guidanceSource = new BaseLLMGuidanceSource(config);
+		guidanceSource = new GuidePromptGuidanceSource(config);
 
 		context = {
 			terminalOutput: 'Some terminal output from Claude Code',
@@ -53,7 +53,7 @@ describe('BaseLLMGuidanceSource', () => {
 
 	describe('properties', () => {
 		it('should have correct static properties', () => {
-			expect(guidanceSource.id).toBe('base-llm');
+			expect(guidanceSource.id).toBe('guide-prompt');
 			expect(guidanceSource.priority).toBe(100);
 			expect(guidanceSource.canShortCircuit).toBe(false);
 		});
@@ -68,7 +68,7 @@ describe('BaseLLMGuidanceSource', () => {
 				confidence: 0.3,
 				guidance: undefined,
 				reasoning: 'No intervention needed',
-				source: 'base-llm',
+				source: 'guide-prompt',
 				priority: 100,
 				metadata: {
 					llmProvider: 'OpenAI',
@@ -96,7 +96,7 @@ describe('BaseLLMGuidanceSource', () => {
 				confidence: 0.8,
 				guidance: 'Try a different approach',
 				reasoning: 'Claude seems stuck in a loop',
-				source: 'base-llm',
+				source: 'guide-prompt',
 				priority: 100,
 				metadata: {
 					llmProvider: 'OpenAI',
@@ -116,7 +116,7 @@ describe('BaseLLMGuidanceSource', () => {
 				shouldIntervene: false,
 				confidence: 0,
 				reasoning: 'LLM analysis failed: API request failed',
-				source: 'base-llm',
+				source: 'guide-prompt',
 				priority: 100,
 				metadata: {
 					error: true,
