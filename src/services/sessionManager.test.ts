@@ -72,17 +72,21 @@ describe('SessionManager', () => {
 
 	beforeEach(async () => {
 		vi.clearAllMocks();
-		
+
 		// Configure AutopilotMonitor mock before importing SessionManager
-		const AutopilotMonitor = (await import('./autopilotMonitor.js')).AutopilotMonitor;
-		vi.mocked(AutopilotMonitor).mockImplementation(() => ({
-			enable: vi.fn(),
-			disable: vi.fn(),
-			isLLMAvailable: vi.fn().mockReturnValue(false), // Default to false to avoid initialization issues
-			updateConfig: vi.fn(),
-			destroy: vi.fn(),
-		}) as any);
-		
+		const AutopilotMonitor = (await import('./autopilotMonitor.js'))
+			.AutopilotMonitor;
+		vi.mocked(AutopilotMonitor).mockImplementation(
+			() =>
+				({
+					enable: vi.fn(),
+					disable: vi.fn(),
+					isLLMAvailable: vi.fn().mockReturnValue(false), // Default to false to avoid initialization issues
+					updateConfig: vi.fn(),
+					destroy: vi.fn(),
+				}) as any,
+		);
+
 		// Dynamically import after mocks are set up
 		const sessionManagerModule = await import('./sessionManager.js');
 		const configManagerModule = await import('./configurationManager.js');

@@ -462,7 +462,6 @@ const App: React.FC<AppProps> = ({devcontainerConfig, multiProject}) => {
 		);
 	}
 
-
 	return null;
 };
 
